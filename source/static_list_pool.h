@@ -4,7 +4,8 @@
   @file static_list.h
   @author Wolfhead
 */
-#include <stdio.h>
+#include <stdint.h>
+
 namespace minotaur {
 
 #define CAS(a_ptr, a_oldVal, a_newVal) \
@@ -25,9 +26,9 @@ class StaticListPool {
     }
 
     if (!size_) {
-      list_[size_ - 1].next = -1;
       head_ = -1;
     } else {
+      list_[size_ - 1].next = -1;
       head_ = 0;
     }
   }
@@ -81,7 +82,7 @@ class StaticListPool {
 
  private:
   struct Holder {
-    LinkType next;
+    volatile LinkType next;
     T       item;
   };
 
@@ -95,90 +96,8 @@ class StaticListPool {
 
   SizeType  size_;
   Holder*   list_;
-  LinkType  head_;
+  volatile  LinkType head_;
 };
-
-template<typename T>
-class List {
- public:
-  typedef int32_t SizeType;
-  typedef int32_t LinkType;
-
-  List(SizeType size) {
-    size_ = size;
-    list_ = new Holder[size_];
-
-    for (SizeType i = 0; i != size_; ++i) {
-      list_[i].next = i + 1;
-    }
-
-    if (!size_) {
-      list_[size_ - 1].next = -1;
-      head_ = -1;
-    } else {
-      head_ = 0;
-    }
-  }
-
-  ~List() {
-    if (list_) {
-      delete [] list_;
-    }
-  }
-
-  bool Free(T* value) {
-    LinkType index = GetIndex(value);
-    if (index < 0 || index >= size_) {
-      return false;
-    }
-
-    LinkType head;
-    boost::mutex::scoped_lock scoped_lock(swap_mutex_);
-    head = head_;
-    list_[index].next = head;
-    head_ = head;
-
-    return true;
-  }
-
-  bool Alloc(T** value) {
-    LinkType head;
-    LinkType next_head;
-
-    boost::mutex::scoped_lock scoped_lock(swap_mutex_);
-
-    head = head_;
-    if (head < 0) {
-      return false;
-    }
-    next_head = list_[head].next;
-    head_ = next_head;
-    *value = &list_[head].item;
-    return true;
-  }
-
-
- private:
-  struct Holder {
-    LinkType next;
-    T       item;
-  };
-
-  Holder* GetHolder(void* p) {
-    return (Holder*)((char *)p - sizeof(LinkType));
-  }
-
-  LinkType GetIndex(void* p) {
-    return GetHolder(p) - list_;
-  }
-
-  SizeType  size_;
-  Holder*   list_;
-  LinkType  head_;
-
-  boost::mutex swap_mutex_;
-};
-
 
 } //namespace minotaur
 

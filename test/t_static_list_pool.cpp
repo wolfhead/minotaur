@@ -32,6 +32,12 @@ BOOST_AUTO_TEST_CASE(TestAlloc) {
     ret = struct_list.Alloc(&p);
     BOOST_CHECK_EQUAL(ret, true);
   }
+
+  i = 1024;
+  while (i--) {
+    ret = struct_list.Alloc(&p);
+    BOOST_CHECK_EQUAL(ret, false);
+  }
 }
 
 BOOST_AUTO_TEST_CASE(TestFree) {
@@ -79,7 +85,10 @@ BOOST_AUTO_TEST_CASE(TestAt) {
 
 namespace {
 
-void LCThreadProc(List<Test>* pool, bool report) {
+void LCThreadProc(StaticListPool<Test>* pool, bool report) {
+  if (report) {
+    printf("ThreadProc start\n");
+  }
 
   std::vector<Test*> vec;
   Test* p;
@@ -94,11 +103,19 @@ void LCThreadProc(List<Test>* pool, bool report) {
     } else {
       vec.push_back(p);
     }
+
+    if (i % 10000 == 0 && report) {
+      printf("Alloc %d item\n", i);
+    }
   }
 
   for (size_t i = 0; i != vec.size(); ++i) {
     if (!pool->Free(vec[i])) {
       ++free_fail;
+    }
+
+    if (i % 10000 == 0 && report) {
+      printf("Free %lu item\n", i);
     }
   }
 
@@ -110,12 +127,11 @@ void LCThreadProc(List<Test>* pool, bool report) {
 
 BOOST_AUTO_TEST_CASE(TestBench) {
   StaticListPool<Test> struct_list(1024 * 1024);
-  List<Test> list(1024 * 1024);
 
   std::vector<boost::thread*> threads;
 
-  for (size_t i = 0; i != 100; ++i) {
-    boost::thread* t = new boost::thread(boost::bind(&LCThreadProc, &list, false));
+  for (size_t i = 0; i != 10; ++i) {
+    boost::thread* t = new boost::thread(boost::bind(&LCThreadProc, &struct_list, true));
     threads.push_back(t);
   }
 

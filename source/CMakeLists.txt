@@ -1,7 +1,7 @@
 INCLUDE (CheckSymbolExists)
 
 CHECK_SYMBOL_EXISTS (epoll_wait "sys/epoll.h" HAS_EPOLL)
-CHECK_SYMBOL_EXISTS (kqueue "sys/event.h" HAS_kQUEUE)
+CHECK_SYMBOL_EXISTS (kqueue "sys/event.h" HAS_KQUEUE)
 
 # generate config.h
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/config.h)

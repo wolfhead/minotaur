@@ -19,7 +19,7 @@ class EventLoopKqueue {
   static const char* GetImplement();
 };
 
-typedef EventLoopEpoll EventLoopImpl;
+typedef EventLoopKqueue EventLoopImpl;
 
 } //namespace event
 } //namespace minotaur
