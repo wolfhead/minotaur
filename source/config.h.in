@@ -1,0 +1,14 @@
+#ifndef _MINOTAUR_CONFIG_H_
+#define _MINOTAUR_CONFIG_H_
+/**
+  @file config.h.in
+  @author Wolfhead
+  This file will be used by cmake to generate config.h
+*/
+
+#cmakedefine HAS_EPOLL 1
+
+#cmakedefine HAS_KQUEUE 1
+
+
+#endif // _MINOTAUR_CONFIG_H_

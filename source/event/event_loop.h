@@ -23,6 +23,8 @@ class EventLoop {
   int RemoveEvent(int fd, int mask);
   int ProcessEvent();
 
+  const char * GetImplement() const;
+
  private:
   EventLoop(const EventLoop&);
   EventLoop& operator = (const EventLoop&);

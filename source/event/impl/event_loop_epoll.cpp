@@ -111,5 +111,9 @@ int EventLoopEpoll::Poll(EventLoopData* el_data, int timeout) {
   return ret;
 }
 
+const char* EventLoopEpoll::GetImplement() {
+  return "epoll";
+}
+
 } //namespace event
 } //namespace minotaur

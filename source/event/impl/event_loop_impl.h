@@ -5,14 +5,15 @@
   @author Wolfhead <wolfhead87@gmail.com>
 */
 
-#include "event_loop_epoll.h"
+#include "../../config.h"
 
-namespace minotaur {
-namespace event {
+#ifdef HAS_EPOLL
+  #include "event_loop_epoll.h"
+#else 
+  #ifdef HAS_KQUEUE
+    #include "event_loop_kqueue.h"
+  #endif // HAS_KQUEUE
+#endif // HAS_EPOOL
 
-typedef EventLoopEpoll EventLoopImpl;
-
-} //namespace event
-} //namespace minotaur
 
 #endif // _MINOTAUR_EVENT_LOOP_EPOLL_H_

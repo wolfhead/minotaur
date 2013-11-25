@@ -114,5 +114,9 @@ int EventLoop::ProcessEvent() {
   return events_num;
 }
 
+const char* EventLoop::GetImplement() const {
+  return EventLoopImpl::GetImplement();
+}
+
 } //namespace event
 } //namespace minotaur

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-namespace minotaur {
+namespace zmt {
 
 #define CAS(a_ptr, a_oldVal, a_newVal) \
 __sync_bool_compare_and_swap(a_ptr, a_oldVal, a_newVal)

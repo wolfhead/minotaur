@@ -5,13 +5,12 @@
 #define private public
 #include <lock_free_ring.hpp>
 #undef private
-
-using namespace minotaur;
+#include <allspark/fifo.h>
 
 BOOST_AUTO_TEST_SUITE(TestLockFreeRing);
 
 BOOST_AUTO_TEST_CASE(TestRoundUpSize) {
-  LockFreeRing<int> ring(1024);
+  zmt::LockFreeRing<int> ring(1024);
 
   uint32_t result;
   result = ring.RoundUpSize(1024);
@@ -31,7 +30,7 @@ BOOST_AUTO_TEST_CASE(TestRoundUpSize) {
 }
 
 BOOST_AUTO_TEST_CASE(TestGetIndex) {
-  LockFreeRing<int> ring(1024);
+  zmt::LockFreeRing<int> ring(1024);
 
   uint32_t result;
   result = ring.GetIndex(0);
@@ -51,7 +50,7 @@ BOOST_AUTO_TEST_CASE(TestGetIndex) {
 }
 
 BOOST_AUTO_TEST_CASE(TestInit) {
-  LockFreeRing<int> ring(1024);
+  zmt::LockFreeRing<int> ring(1024);
   BOOST_CHECK_EQUAL(0, ring.Size());
 
   bool result = false;
@@ -143,7 +142,7 @@ void ConsumerProcFifo(zmt::FifoQueue<int>* ring) {
 }
 
 BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
-  LockFreeRing<int> ring(10240000);
+  zmt::LockFreeRing<int> ring(10240000);
 
   std::vector<boost::thread*> producer_threads;
   std::vector<boost::thread*> consumer_threads;
@@ -176,7 +175,7 @@ BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
 
 
 BOOST_AUTO_TEST_CASE(TestThreadingFifo) {
-  FifoQueue<int> ring(10240000);
+  zmt::FifoQueue<int> ring(10240000);
 
   std::vector<boost::thread*> producer_threads;
   std::vector<boost::thread*> consumer_threads;

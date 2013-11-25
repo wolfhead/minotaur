@@ -1,15 +1,15 @@
-#ifndef _MINOTAUR_EVENT_LOOP_EPOLL_H_
-#define _MINOTAUR_EVENT_LOOP_EPOLL_H_
+#ifndef _MINOTAUR_EVENT_LOOP_KQUEUE_H_
+#define _MINOTAUR_EVENT_LOOP_KQUEUE_H_
 /**
-  @file event_loop_epoll.h
-  @author Wolfhead <wolfhead87@gmail.com>
+  @file event_loop_kqueue.h
+  @author Wolfhead
 */
 
 namespace minotaur {
 namespace event {
 
 struct EventLoopData;
-class EventLoopEpoll {
+class EventLoopKqueue {
  public:
   static int Init(EventLoopData* el_data);
   static int Destroy(EventLoopData* el_data);
@@ -24,4 +24,4 @@ typedef EventLoopEpoll EventLoopImpl;
 } //namespace event
 } //namespace minotaur
 
-#endif // _MINOTAUR_EVENT_LOOP_EPOLL_H_
+#endif // _MINOTAUR_EVENT_LOOP_KQUEUE_H_
