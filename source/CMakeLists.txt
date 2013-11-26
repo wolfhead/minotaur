@@ -19,6 +19,7 @@ set(MINOTAUR_SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h
   event/event_loop.cpp
   event/event_loop_data.cpp
+  event/timer_loop.cpp
   ${MINOTAUR_EVENT_SOURCE}
 )
 

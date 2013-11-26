@@ -92,13 +92,13 @@ int EventLoop::RemoveEvent(int fd, int mask) {
   return EventLoopImpl::RemoveEvent(data_, fd, mask);
 }
 
-int EventLoop::ProcessEvent() {
-  int events_num = EventLoopImpl::Poll(data_, -1);
-  if (events_num < 0) {
-    return -1;
+int EventLoop::ProcessEvent(int timeout) {
+  int ret = EventLoopImpl::Poll(data_, timeout);
+  if (ret < 0) {
+    return ret;
   }
 
-  for (int i = 0; i != events_num; i++) {
+  for (int i = 0; i != ret; i++) {
     FiredEvent* fired_event = &data_->fired_events[i];
     int mask = fired_event->mask;
     int fd = fired_event->fd;
@@ -111,7 +111,7 @@ int EventLoop::ProcessEvent() {
     }
   }
 
-  return events_num;
+  return ret;
 }
 
 const char* EventLoop::GetImplement() const {

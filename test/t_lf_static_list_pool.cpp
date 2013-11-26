@@ -1,15 +1,16 @@
 #define BOOST_AUTO_TEST_MAIN
 
+#include <stdio.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #define private public
-#include <static_list_pool.h>
+#include <lockfree/lf_static_list_pool.h>
 #undef private
 
-using namespace minotaur;
+using namespace minotaur::lockfree;
 
-BOOST_AUTO_TEST_SUITE(TestStaticList);
+BOOST_AUTO_TEST_SUITE(TestLFStaticListPool);
 
 struct Test {
   int a;
@@ -18,12 +19,12 @@ struct Test {
 
 
 BOOST_AUTO_TEST_CASE(TestConstructDefault) {
-  StaticListPool<int> int_list(1024);
-  StaticListPool<Test> struct_list(1024);
+  LFStaticListPool<int> int_list(1024);
+  LFStaticListPool<Test> struct_list(1024);
 }
 
 BOOST_AUTO_TEST_CASE(TestAlloc) {
-  StaticListPool<Test> struct_list(1024);
+  LFStaticListPool<Test> struct_list(1024);
 
   int i = 1024;
   Test* p;
@@ -41,7 +42,7 @@ BOOST_AUTO_TEST_CASE(TestAlloc) {
 }
 
 BOOST_AUTO_TEST_CASE(TestFree) {
-  StaticListPool<Test> struct_list(1024);
+  LFStaticListPool<Test> struct_list(1024);
 
   int i = 1024;
   Test* p;
@@ -64,7 +65,7 @@ BOOST_AUTO_TEST_CASE(TestFree) {
 }
 
 BOOST_AUTO_TEST_CASE(TestAt) {
-  StaticListPool<Test> struct_list(1024);
+  LFStaticListPool<Test> struct_list(1024);
   Test* p;
   bool ret;
   std::vector<Test*> vec;
@@ -85,7 +86,7 @@ BOOST_AUTO_TEST_CASE(TestAt) {
 
 namespace {
 
-void LCThreadProc(StaticListPool<Test>* pool, bool report) {
+void LCThreadProc(LFStaticListPool<Test>* pool, bool report) {
   if (report) {
     printf("ThreadProc start\n");
   }
@@ -126,7 +127,7 @@ void LCThreadProc(StaticListPool<Test>* pool, bool report) {
 }
 
 BOOST_AUTO_TEST_CASE(TestBench) {
-  StaticListPool<Test> struct_list(1024 * 1024);
+  LFStaticListPool<Test> struct_list(1024 * 1024);
 
   std::vector<boost::thread*> threads;
 

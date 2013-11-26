@@ -21,7 +21,13 @@ class EventLoop {
 
   int AddEvent(int fd, int mask, FileEventProc* proc, void* client_data);
   int RemoveEvent(int fd, int mask);
-  int ProcessEvent();
+
+  /**
+    Process Event 
+    @param timeout millisecond
+    @return number of events processed if >= 0, system error if < 0 
+  */
+  int ProcessEvent(int timeout);
 
   const char * GetImplement() const;
 

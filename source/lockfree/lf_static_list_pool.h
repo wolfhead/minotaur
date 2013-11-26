@@ -1,23 +1,24 @@
-#ifndef _MINOTAUR_STATIC_LIST_POOL_H_
-#define _MINOTAUR_STATIC_LIST_POOL_H_
+#ifndef _MINOTAUR_LF_STATIC_LIST_POOL_H_
+#define _MINOTAUR_LF_STATIC_LIST_POOL_H_
 /**
-  @file static_list.h
+  @file lf_static_list.h
   @author Wolfhead
 */
-#include <stdint.h>
+#include "lf_util.h"
 
 namespace minotaur {
+namespace lockfree {
 
-#define CAS(a_ptr, a_oldVal, a_newVal) \
-__sync_bool_compare_and_swap(a_ptr, a_oldVal, a_newVal)
-
+/**
+  LFStaticListPool for multi-Alloc/multi-Free
+*/
 template<typename T>
-class StaticListPool {
+class LFStaticListPool {
  public:
-  typedef int32_t SizeType;
-  typedef int32_t LinkType;
+  typedef int SizeType;
+  typedef int LinkType;
 
-  StaticListPool(SizeType size) {
+  LFStaticListPool(SizeType size) {
     size_ = size;
     list_ = new Holder[size_];
 
@@ -33,7 +34,7 @@ class StaticListPool {
     }
   }
 
-  ~StaticListPool() {
+  ~LFStaticListPool() {
     if (list_) {
       delete [] list_;
     }
@@ -50,7 +51,7 @@ class StaticListPool {
     do {
        head = head_;
        list_[index].next = head;
-    } while (!CAS(&head_, head, index));
+    } while (!LF_CAS(&head_, head, index));
 
     return true;
   }
@@ -65,7 +66,7 @@ class StaticListPool {
         return false;
       }
       next_head = list_[head].next;
-    } while (!CAS(&head_, head, next_head));
+    } while (!LF_CAS(&head_, head, next_head));
 
     *value = &list_[head].item;
     return true;
@@ -99,6 +100,7 @@ class StaticListPool {
   volatile  LinkType head_;
 };
 
+} //namespace lockfree
 } //namespace minotaur
 
-#endif // _MINOTAUR_STATIC_LIST_H_
+#endif // _MINOTAUR_LF_STATIC_LIST_POOL_H_

@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(TestCompile) {
   BOOST_CHECK_EQUAL(ret, 0);
 
   while (true) {
-    ret = el.ProcessEvent();
+    ret = el.ProcessEvent(1000);
     std::cout << "ProcessEvent: " << ret << std::endl;
   }
 }
