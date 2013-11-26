@@ -8,7 +8,6 @@ link_libraries(
   ${Boost_LIBRARIES}
   ${MINOTAUR_LIBRARIES}
   pthread
-  rt
 )
 
 add_executable(t_local
@@ -19,3 +18,9 @@ add_executable(t_event_loop
 
 add_executable(t_lf_static_list_pool
   t_lf_static_list_pool.cpp)
+
+add_executable(t_timer_slot
+  t_timer_slot.cpp)
+
+add_executable(t_timer_wheel
+  t_timer_wheel.cpp)

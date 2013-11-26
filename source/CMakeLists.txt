@@ -9,7 +9,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_SOURCE_DI
 IF(${HAS_EPOLL})
   SET(MINOTAUR_EVENT_SOURCE event/impl/event_loop_epoll.cpp)
 ELSE()
-  IF(${HAS_kQUEUE})
+  IF(${HAS_KQUEUE})
     SET(MINOTAUR_EVENT_SOURCE event/impl/event_loop_kqueue.cpp)
   ENDIF()
 ENDIF()
@@ -19,7 +19,7 @@ set(MINOTAUR_SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h
   event/event_loop.cpp
   event/event_loop_data.cpp
-  event/timer_loop.cpp
+  event/timer/timer_wheel.cpp
   ${MINOTAUR_EVENT_SOURCE}
 )
 
