@@ -17,7 +17,8 @@ BOOST_AUTO_TEST_CASE(TestInit) {
 
   ret = tw.Init(10000, 1000, 65536);
   BOOST_CHECK_EQUAL(ret, 0);
-  BOOST_CHECK_EQUAL(tw.size_, 1024 * 16);
+  BOOST_CHECK_EQUAL(tw.wheel_size_, 1024 * 16);
+  BOOST_CHECK_EQUAL(tw.pending_size_, 16);
   BOOST_CHECK_EQUAL(tw.interval_usec_, 1000);
   
   BOOST_CHECK_EQUAL(tw.current_sec_, 0);
@@ -25,7 +26,7 @@ BOOST_AUTO_TEST_CASE(TestInit) {
   BOOST_CHECK_EQUAL(tw.current_index_, 0);
 
   BOOST_CHECK_EQUAL(true, tw.wheel_slots_ != NULL);
-  BOOST_CHECK_EQUAL(true, tw.pending_slot_ != NULL);
+  BOOST_CHECK_EQUAL(true, tw.pending_slots_ != NULL);
 
   TimerEvent* event;
   tw.event_pool_->At(1, &event);
@@ -35,7 +36,7 @@ BOOST_AUTO_TEST_CASE(TestInit) {
   BOOST_CHECK_EQUAL(65535, event->id);
 
   bool pop = tw.wheel_slots_[10001].PopEvent(&event);
-  BOOST_CHECK_EQUAL(true, pop);
+  BOOST_CHECK_EQUAL(false, pop);
 }
 
 namespace {

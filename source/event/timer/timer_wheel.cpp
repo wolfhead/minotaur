@@ -10,8 +10,9 @@ namespace event {
 
 TimerWheel::TimerWheel()
     : wheel_slots_(NULL)
-    , pending_slot_(NULL)
-    , size_(0)
+    , pending_slots_(NULL)
+    , wheel_size_(0)
+    , pending_size_(0)
     , interval_usec_(0)
     , current_sec_(0)
     , current_usec_(0)
@@ -25,10 +26,11 @@ TimerWheel::~TimerWheel() {
 }
 
 int TimerWheel::Init(int wheel_size, int interval, int set_size) {
-  size_ = RoundUpSize(wheel_size);
+  wheel_size_ = RoundUpSize(wheel_size);
+  pending_size_ = RoundUpSize(16);
   interval_usec_ = interval;
-  wheel_slots_ = new PlainTimerSlot[size_];
-  pending_slot_ = new CasTimerSlot;
+  wheel_slots_ = new PlainTimerSlot[wheel_size_];
+  pending_slots_ = new CasTimerSlot[pending_size_];
   event_pool_ = new lockfree::LFStaticListPool<TimerEvent>(set_size);
 
   // set timer id
@@ -50,9 +52,9 @@ int TimerWheel::Destroy() {
     wheel_slots_ = NULL;
   }
 
-  if (pending_slot_) {
-    delete pending_slot_;
-    pending_slot_ = NULL;
+  if (pending_slots_) {
+    delete [] pending_slots_;
+    pending_slots_ = NULL;
   }
 
   if (event_pool_) {
@@ -82,7 +84,13 @@ int TimerWheel::AddEvent(
   p->proc = proc;
   p->client_data = client_data;
 
-  pending_slot_->PushEvent(p);
+  TimerSlot* pending_slot = GetPendingSlot(when_sec, when_usec);
+  if (!pending_slot) {
+    event_pool_->Free(p);
+    return -1;
+  }
+
+  pending_slot->PushEvent(p);
   return 0;
 }
 
@@ -112,7 +120,7 @@ int TimerWheel::ProcessEvent() {
   }
 
   // process the pending_slot
-  if (0 != ProcessPendingSlot(pending_slot_)) {
+  if (0 != ProcessPendingSlot(pending_slots_)) {
     return -1;
   }
 
@@ -130,7 +138,7 @@ int TimerWheel::ProcessEvent() {
   int step = delta / interval_usec_;
 
   while (step--) {
-    current_index_ = GetIndex(current_index_ + 1);
+    current_index_ = GetIndex(current_index_ + 1, wheel_size_);
     AddMicroSecond(&current_sec_, &current_usec_, interval_usec_);
     ProcessWheelSlot(wheel_slots_ + current_index_);
   }
@@ -140,19 +148,25 @@ int TimerWheel::ProcessEvent() {
 
 int TimerWheel::ProcessPendingSlot(TimerSlot* pending_slot) {
   TimerEvent* event = NULL;
+  PlainTimerSlot tmp_slot;
+
   while (pending_slot->PopEvent(&event)) {
     if (!event->proc) { // already been removed
       event_pool_->Free(event);
       continue;
     }
 
-    TimerSlot* slot = GetSlot(event->when_sec, event->when_usec);
+    TimerSlot* slot = GetWheelSlot(event->when_sec, event->when_usec);
     if (!slot) {
-      // TODO  we should put it back
+      tmp_slot.PushEvent(event);
       continue;
     } else {
       slot->PushEvent(event);
     }
+  }
+
+  while (tmp_slot.PopEvent(&event)) {
+    pending_slot->PushEvent(event);
   }
 
   return 0;
@@ -194,16 +208,16 @@ void TimerWheel::AddMicroSecond(int64_t* sec, int64_t* usec, int64_t add_usec) {
   *usec = *usec % 1000000;
 }
 
-TimerSlot* TimerWheel::GetSlot(int64_t when_sec, int64_t when_usec) {
+TimerSlot* TimerWheel::GetWheelSlot(int64_t when_sec, int64_t when_usec) {
   int64_t delta = (when_sec - current_sec_) * 1000000 + (when_usec - current_usec_);
   delta = delta < 0 ? 0 : delta;
 
   int32_t step = (delta / interval_usec_) + 1;
-  if (step >= size_) {
-    return NULL;
-  }
+  return &wheel_slots_[GetIndex(current_index_ + step, wheel_size_)];
+}
 
-  return &wheel_slots_[GetIndex(current_index_ + step)];
+TimerSlot* TimerWheel::GetPendingSlot(int64_t /*when_sec*/, int64_t /*when_usec*/) {
+  return pending_slots_;
 }
 
 int TimerWheel::FireTimerEvent(TimerEvent* event) {

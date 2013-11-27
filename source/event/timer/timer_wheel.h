@@ -29,13 +29,12 @@ class TimerWheel {
 
  private:
   uint32_t RoundUpSize(uint32_t size) const;
-  inline int GetIndex(int index) const {
-    return index & (size_ - 1);
+  inline int GetIndex(int index, int size) const {
+    return index & (size - 1);
   }
 
-
-  TimerSlot* GetSlot(int64_t when_sec, int64_t when_usec);
-  int LinkSlot(TimerSlot* slot, TimerEvent* event);
+  TimerSlot* GetWheelSlot(int64_t when_sec, int64_t when_usec);
+  TimerSlot* GetPendingSlot(int64_t when_sec, int64_t when_usec);
 
   int ProcessPendingSlot(TimerSlot* slot);
   int ProcessWheelSlot(TimerSlot* slot);
@@ -44,9 +43,11 @@ class TimerWheel {
   int FireTimerEvent(TimerEvent* event);
 
   PlainTimerSlot* wheel_slots_;
-  CasTimerSlot* pending_slot_;
+  CasTimerSlot* pending_slots_;
 
-  int size_;
+  int     wheel_size_;
+  int     pending_size_;
+
   int64_t interval_usec_;
   int64_t current_sec_;
   int64_t current_usec_;

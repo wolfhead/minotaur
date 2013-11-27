@@ -1,5 +1,6 @@
 #define BOOST_AUTO_TEST_MAIN
 
+#include <stdio.h>
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 #include <event/timer/timer_slot.h>
@@ -9,7 +10,7 @@ using namespace minotaur::event;
 BOOST_AUTO_TEST_SUITE(TestTimerSlot);
 
 TimerSlot* CreateTimerSlot() {
-  return new CasTimerSlot();
+  return new MutexTimerSlot();
 }
 
 
@@ -43,6 +44,46 @@ BOOST_AUTO_TEST_CASE(TestPushPop) {
   delete slot;
 }
 
+BOOST_AUTO_TEST_CASE(TestPlainTimerSlotIterate) {
+  PlainTimerSlot* slot = new PlainTimerSlot();
+  TimerEvent* ev;
+  ev = new TimerEvent();
+  ev->id = 4;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 3;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 2;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 1;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 0;
+  slot->PushEvent(ev);
+
+  int i = 0;
+  PlainTimerSlot::iterator end = slot->end();
+  for (PlainTimerSlot::iterator it = slot->begin(); it != end; ++it, ++i) {
+    BOOST_CHECK_EQUAL(i, it->id);
+  }
+
+  for (PlainTimerSlot::iterator it = slot->begin(); it != end; ++it, ++i) {
+    delete *it;
+  }
+
+  delete slot;
+}
+
+BOOST_AUTO_TEST_CASE(TestPlainTimerSlotRemove) {
+
+}
+
 namespace {
 
 static bool g_running = true;
@@ -52,7 +93,6 @@ void Pusher(TimerSlot* slot, int id, int count) {
     TimerEvent* ev = new TimerEvent();
     ev->when_sec = id;
     ev->when_usec = count;
-
     slot->PushEvent(ev);
   }
 }
@@ -67,6 +107,7 @@ void Poper(
       boost::mutex::scoped_lock scope_lock(mutex_vec[ev->when_sec]);
       result_vec[ev->when_sec].push_back(ev->when_usec);
       delete ev;
+      ev = NULL;
     }
   }
 }
@@ -76,7 +117,7 @@ void Poper(
 BOOST_AUTO_TEST_CASE(TestPerformance) {
   static const size_t pusher_count = 10;
   static const size_t poper_count = 10; 
-  static const size_t item_count = 1000000;
+  static const size_t item_count = 10000;
 
   std::cout << "Start Performance Test" << std::endl;
 
@@ -101,6 +142,7 @@ BOOST_AUTO_TEST_CASE(TestPerformance) {
        it != pusher_threads.end();
        ++it) {
     (*it)->join();
+    delete *it;
   }
 
   std::cout << "pusher finish, wait for poper" << std::endl;
@@ -110,6 +152,7 @@ BOOST_AUTO_TEST_CASE(TestPerformance) {
        it != poper_threads.end();
        ++it) {
     (*it)->join();
+    delete *it;
   }
 
   std::cout << "poper finish, start verify" << std::endl;

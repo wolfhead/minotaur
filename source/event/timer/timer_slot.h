@@ -20,9 +20,9 @@ struct TimerEvent {
   int id;
   int64_t when_sec;  /* seconds */
   int64_t when_usec; /* microseconds */
-  TimerProc* proc;
+  volatile TimerProc* proc;
   void* client_data;
-  TimerEvent* next;
+  volatile TimerEvent* next;
 };
 
 class TimerSlot {
@@ -34,6 +34,8 @@ class TimerSlot {
 
 class PlainTimerSlot : public TimerSlot {
  public:
+  class iterator;
+
   PlainTimerSlot() : head_(NULL) {};
 
   virtual void PushEvent(TimerEvent* ev) {
@@ -45,12 +47,72 @@ class PlainTimerSlot : public TimerSlot {
     *ev = head_;
 
     if (head_ != NULL) {
-      head_ = head_->next;
+      head_ = const_cast<TimerEvent*>(head_->next);
       return true;
     }
 
     return false;
   }
+
+  inline iterator begin() const {
+    return iterator(NULL, head_);
+  }
+
+  inline iterator end() const {
+    return iterator(NULL, NULL);
+  }
+
+  inline iterator Remove(const iterator& it) {
+    if (it.cur() == NULL) {
+      return end();
+    }
+
+    if (it.prev() != NULL) {
+      it.prev()->next = it.cur()->next;
+    }
+
+    return iterator(it.prev(), const_cast<TimerEvent*>(it.prev()->next));
+  }
+
+  class iterator {
+   public:
+    iterator(TimerEvent* prev, TimerEvent* cur) : prev_(prev), cur_(cur) {}
+    iterator(const iterator& it) : prev_(it.prev_), cur_(it.cur_) {}
+
+    iterator& operator = (const iterator& it) {
+      if (&it == this) {
+        return *this;
+      }
+      prev_ = it.prev_;
+      cur_ = it.cur_;
+      return *this;
+    }
+
+    bool operator == (const iterator& it) const {return cur_ == it.cur_;}
+    bool operator != (const iterator& it) const {return cur_ != it.cur_;}
+
+    iterator& operator++() {
+      prev_ = cur_;
+      if (cur_) {cur_ = const_cast<TimerEvent*>(cur_->next);}
+      return *this;
+    }
+
+    iterator operator++(int) {
+      iterator it(*this);
+      ++(*this);
+      return it;
+    }
+
+    inline TimerEvent* prev() const {return prev_;}
+    inline TimerEvent* cur() const {return cur_;}
+
+    TimerEvent* operator* () const {return cur_;}
+    TimerEvent* operator-> () const {return cur_;}
+
+   private:
+    TimerEvent* prev_;
+    TimerEvent* cur_;
+  };
 
  private:
   TimerEvent* head_;
@@ -65,13 +127,13 @@ class MutexTimerSlot : public TimerSlot {
 
   virtual void PushEvent(TimerEvent* ev) {
     boost::mutex::scoped_lock scope_lock(mutex_);
-    ev->next = head_;
+    ev->next = const_cast<TimerEvent*>(head_);
     head_ = ev;
   }
 
   virtual bool PopEvent(TimerEvent** ev) {
     boost::mutex::scoped_lock scope_lock(mutex_);
-    *ev = head_;
+    *ev = const_cast<TimerEvent*>(head_);
 
     if (head_ != NULL) {
       head_ = head_->next;
@@ -83,7 +145,7 @@ class MutexTimerSlot : public TimerSlot {
 
 
  private:
-  TimerEvent* head_;
+  volatile TimerEvent* head_;
   boost::mutex mutex_;
 };
 
@@ -93,13 +155,13 @@ class CasTimerSlot : public TimerSlot {
 
   virtual void PushEvent(TimerEvent* event) {
     do {
-      event->next = head_;
+      event->next = const_cast<TimerEvent*>(head_);
     } while (!LF_CAS(&head_, event->next, event));
   }
 
   virtual bool PopEvent(TimerEvent** event) {
     do {
-      *event = head_;
+      *event = const_cast<TimerEvent*>(head_);
       if (*event == NULL) {
         return false;
       }
@@ -108,7 +170,7 @@ class CasTimerSlot : public TimerSlot {
   }
 
  private:
-  TimerEvent* head_;
+  volatile TimerEvent* head_;
 };
 
 } //namespace event
