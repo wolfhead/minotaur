@@ -81,6 +81,43 @@ BOOST_AUTO_TEST_CASE(TestPlainTimerSlotIterate) {
 }
 
 BOOST_AUTO_TEST_CASE(TestPlainTimerSlotRemove) {
+  PlainTimerSlot* slot = new PlainTimerSlot();
+  TimerEvent* ev;
+  ev = new TimerEvent();
+  ev->id = 4;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 3;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 2;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 1;
+  slot->PushEvent(ev);
+
+  ev = new TimerEvent();
+  ev->id = 0;
+  slot->PushEvent(ev);
+
+  PlainTimerSlot::iterator end = slot->end();
+  for (PlainTimerSlot::iterator it = slot->begin(); it != end; ++it) {
+    if (it->id == 2) {
+      it = slot->Remove(it);
+    }
+  }
+
+  int i = 0;
+  for (PlainTimerSlot::iterator it = slot->begin(); it != end; ++it, ++i) {
+    BOOST_CHECK_EQUAL(i, it->id);
+    if (i == 1) ++i;
+    delete *it;
+  }
+
+  delete slot;
 
 }
 
@@ -101,7 +138,7 @@ void Poper(
     TimerSlot* slot, 
     std::vector<int64_t>* result_vec,
     boost::mutex* mutex_vec) {
-  TimerEvent* ev;
+  TimerEvent* ev = NULL;
   while (g_running || slot->PopEvent(&ev)) {
     if (ev) {
       boost::mutex::scoped_lock scope_lock(mutex_vec[ev->when_sec]);
@@ -117,7 +154,7 @@ void Poper(
 BOOST_AUTO_TEST_CASE(TestPerformance) {
   static const size_t pusher_count = 10;
   static const size_t poper_count = 10; 
-  static const size_t item_count = 10000;
+  static const size_t item_count = 1000000;
 
   std::cout << "Start Performance Test" << std::endl;
 

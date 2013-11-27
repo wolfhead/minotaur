@@ -37,7 +37,7 @@ class TimerWheel {
   TimerSlot* GetPendingSlot(int64_t when_sec, int64_t when_usec);
 
   int ProcessPendingSlot(TimerSlot* slot);
-  int ProcessWheelSlot(TimerSlot* slot);
+  int ProcessWheelSlot(PlainTimerSlot* slot);
 
   int ValidateTimerEvent(TimerEvent* event);
   int FireTimerEvent(TimerEvent* event);

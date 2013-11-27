@@ -8,7 +8,6 @@ link_libraries(
   ${Boost_LIBRARIES}
   ${MINOTAUR_LIBRARIES}
   pthread
-  rt
 )
 
 add_executable(t_local

@@ -18,11 +18,11 @@ typedef void TimerProc(TimerWheel *timer_wheel, int id, void *client_data);
 
 struct TimerEvent {
   int id;
+  void* client_data;
   int64_t when_sec;  /* seconds */
   int64_t when_usec; /* microseconds */
-  volatile TimerProc* proc;
-  void* client_data;
-  volatile TimerEvent* next;
+  TimerProc* volatile proc;
+  TimerEvent* volatile next;
 };
 
 class TimerSlot {
@@ -47,7 +47,7 @@ class PlainTimerSlot : public TimerSlot {
     *ev = head_;
 
     if (head_ != NULL) {
-      head_ = const_cast<TimerEvent*>(head_->next);
+      head_ = head_->next;
       return true;
     }
 
@@ -69,9 +69,11 @@ class PlainTimerSlot : public TimerSlot {
 
     if (it.prev() != NULL) {
       it.prev()->next = it.cur()->next;
+      return iterator(it.prev(), it.prev()->next);
+    } else {
+      head_ = it.cur()->next;
+      return begin();
     }
-
-    return iterator(it.prev(), const_cast<TimerEvent*>(it.prev()->next));
   }
 
   class iterator {
@@ -93,7 +95,7 @@ class PlainTimerSlot : public TimerSlot {
 
     iterator& operator++() {
       prev_ = cur_;
-      if (cur_) {cur_ = const_cast<TimerEvent*>(cur_->next);}
+      if (cur_) {cur_ = cur_->next;}
       return *this;
     }
 
@@ -127,13 +129,13 @@ class MutexTimerSlot : public TimerSlot {
 
   virtual void PushEvent(TimerEvent* ev) {
     boost::mutex::scoped_lock scope_lock(mutex_);
-    ev->next = const_cast<TimerEvent*>(head_);
+    ev->next = head_;
     head_ = ev;
   }
 
   virtual bool PopEvent(TimerEvent** ev) {
     boost::mutex::scoped_lock scope_lock(mutex_);
-    *ev = const_cast<TimerEvent*>(head_);
+    *ev = head_;
 
     if (head_ != NULL) {
       head_ = head_->next;
@@ -145,7 +147,7 @@ class MutexTimerSlot : public TimerSlot {
 
 
  private:
-  volatile TimerEvent* head_;
+  TimerEvent* volatile head_;
   boost::mutex mutex_;
 };
 
@@ -155,13 +157,13 @@ class CasTimerSlot : public TimerSlot {
 
   virtual void PushEvent(TimerEvent* event) {
     do {
-      event->next = const_cast<TimerEvent*>(head_);
+      event->next = head_;
     } while (!LF_CAS(&head_, event->next, event));
   }
 
   virtual bool PopEvent(TimerEvent** event) {
     do {
-      *event = const_cast<TimerEvent*>(head_);
+      *event = head_;
       if (*event == NULL) {
         return false;
       }
@@ -170,7 +172,7 @@ class CasTimerSlot : public TimerSlot {
   }
 
  private:
-  volatile TimerEvent* head_;
+  TimerEvent* volatile head_;
 };
 
 } //namespace event

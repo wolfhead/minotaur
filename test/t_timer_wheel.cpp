@@ -42,6 +42,10 @@ BOOST_AUTO_TEST_CASE(TestInit) {
 namespace {
 
 static bool g_running = true;
+struct ClientData {
+  int64_t sec;
+  int64_t usec;
+};
 
 void TimerLoop(TimerWheel* tw) {
   EventLoop el;
@@ -59,7 +63,15 @@ void TimerLoop(TimerWheel* tw) {
 }
 
 void TimerProc(TimerWheel* tw, int id, void* client_data) {
-  std::cout << "OnTimer:" << id << std::endl;
+  int64_t sec;
+  int64_t usec;
+  ClientData* data = (ClientData*)client_data;
+  TimerWheel::GetCurrentTime(&sec, &usec);
+  std::cout << "OnTimer:" << id 
+            << ", current_sec:" << sec 
+            << ", current_usec:" << usec 
+            << ", target_sec:" << data->sec
+            << ", target_usec:" << data->usec << std::endl;
 }
 
 } //namespace
@@ -73,12 +85,11 @@ BOOST_AUTO_TEST_CASE(TestTimer) {
 
   int64_t timeout_usec;
   while (std::cin >> timeout_usec) {
-    int64_t sec;
-    int64_t usec;
-    TimerWheel::GetCurrentTime(&sec, &usec);
-    TimerWheel::AddMicroSecond(&sec, &usec, timeout_usec);
+    ClientData* pdata = new ClientData;
+    TimerWheel::GetCurrentTime(&pdata->sec, &pdata->usec);
+    TimerWheel::AddMicroSecond(&pdata->sec, &pdata->usec, timeout_usec);
 
-    tw.AddEvent(sec, usec, TimerProc, NULL);
+    tw.AddEvent(pdata->sec, pdata->usec, TimerProc, pdata);
   }
 
   std::cout << "done" << std::endl;

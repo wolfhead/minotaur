@@ -116,7 +116,12 @@ int TimerWheel::RemoveEvent(int id) {
 
 int TimerWheel::ProcessEvent() {
   if (0 == current_sec_ && 0 == current_usec_) {
+    // set current time and algin it to interval
     GetCurrentTime(&current_sec_, &current_usec_);
+    int64_t total_usec = current_sec_ * 1000000 + current_usec_;
+    total_usec = total_usec / interval_usec_ * interval_usec_;
+    current_sec_ = total_usec / 1000000;
+    current_usec_ = total_usec % 1000000; 
   }
 
   // process the pending_slot
@@ -172,10 +177,18 @@ int TimerWheel::ProcessPendingSlot(TimerSlot* pending_slot) {
   return 0;
 }
 
-int TimerWheel::ProcessWheelSlot(TimerSlot* slot) {
+int TimerWheel::ProcessWheelSlot(PlainTimerSlot* slot) {
   TimerEvent* ev = NULL;
-  while (slot->PopEvent(&ev)) {
-    FireTimerEvent(ev);
+  PlainTimerSlot::iterator end = slot->end();
+  for (PlainTimerSlot::iterator it = slot->begin(); it != end; ++it) {
+    if (it->when_sec > current_sec_ 
+        || (it->when_sec == current_sec_ && it->when_usec > current_usec_)) {
+      continue;
+    } else {
+      ev = *it;
+      it = slot->Remove(it);
+      FireTimerEvent(ev);
+    }
   }
   return 0;
 }
