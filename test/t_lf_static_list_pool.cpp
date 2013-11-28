@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(TestFree) {
 
 BOOST_AUTO_TEST_CASE(TestAt) {
   LFStaticListPool<Test> struct_list(1024);
-  Test* p;
+  Test* p = NULL;
   bool ret;
   std::vector<Test*> vec;
 

@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <pthread.h>
+#include <boost/atomic.hpp>
 
 namespace zmt {
 
@@ -14,15 +13,16 @@ __sync_bool_compare_and_swap(a_ptr, a_oldVal, a_newVal)
 template<typename T>
 class LockFreeRing {
  public:
-  LockFreeRing(uint32_t size) 
+  typedef uint32_t SizeType;
+
+  LockFreeRing(SizeType size) 
       : size_(RoundUpSize(size))
       , ring_(NULL) 
       , read_index_(0)
-      , write_index_(0)
-      , read_index_max_(0) {
-    assert(size);
+      , write_index_(0) 
+      , max_read_(0) {
     ring_ = new RingItem[size_];
-    memset(ring, sizeof(RingItem), 0);
+    memset(ring_, sizeof(RingItem) * size_, 0);
   }
 
   ~LockFreeRing() {
@@ -33,53 +33,60 @@ class LockFreeRing {
   }
 
   bool Push(const T& item) {
-    uint32_t read_index;
     uint32_t write_index;
     uint32_t next_index;
+    uint32_t max_read;
 
+    // claim a slot
     do {
-      read_index  = read_index_;
       write_index = write_index_;
       next_index = GetIndex(write_index + 1);
-      
-      if (next_index == read_index) {
-        //printf("push s:%d,  r:%d, w:%d, m:%d\n", size_, read_index_, write_index_, read_index_max_);
+
+      if (next_index == read_index_) {
         return false;
       }
+
     } while (!CAS(&write_index_, write_index, next_index));
 
-    ring_[write_index] = item;
+    // prepare the data and commit
+    ring_[write_index].item = item;
+    ring_[write_index].flag = RingItem::kCommit;
 
-    while (!CAS(&read_index_max_, write_index, next_index)) {
-      sched_yield();
-    }
+    do {
+      max_read = max_read_;
+      if (ring_[max_read].flag != RingItem::kCommit) {
+        break;
+      }
+      next_index = GetIndex(max_read + 1);
+    } while (CAS(&max_read_, max_read, next_index));
+
     return true;
   }
 
-  bool Pop(T& item) {
-    uint32_t read_index_max;
+  bool Pop(T* item) {
     uint32_t read_index;
     uint32_t next_index;
+    uint32_t max_read;
 
     do {
+      max_read = max_read_;
       read_index = read_index_;
-      read_index_max = read_index_max_;
-      next_index = GetIndex(read_index + 1);
-
-      if (read_index == read_index_max) {
-        //printf("pop s:%d,  r:%d, w:%d, m:%d\n", size_, read_index_, write_index_, read_index_max_);
+      
+      if (max_read == read_index) {
+        //std::cout << "Pop_fail:" << read_index << std::endl;
         return false;
       }
 
-      item = ring_[read_index];
+      next_index = GetIndex(read_index + 1);
 
-      if (CAS(&read_index_, read_index, next_index)) {
-        return true;
-      }
-    } while(1);
+      *item = ring_[read_index].item;
+      ring_[read_index].flag = RingItem::kFree;
 
-    assert(0);
-    return false;
+      //std::cout << "Pop_try:" << read_index << std::endl;
+    } while(!CAS(&read_index_, read_index, next_index));
+
+    //std::cout << "Pop_success:" << read_index << std::endl;
+    return true;
   }
 
   inline uint32_t Size() {
@@ -96,10 +103,14 @@ class LockFreeRing {
  private:
 
   struct RingItem {
-    char flag;
+    enum {
+      kFree = 0,
+      kCommit
+    };
+
+    boost::atomic<char> flag;
     T item;
   };
-
 
   LockFreeRing(const LockFreeRing<T>&);
   LockFreeRing<T>& operator=(const LockFreeRing<T>&);
@@ -129,7 +140,7 @@ class LockFreeRing {
 
   volatile uint32_t read_index_;
   volatile uint32_t write_index_;
-  volatile uint32_t read_index_max_;
+  volatile uint32_t max_read_;
 };
 
 } //namespace zmt
