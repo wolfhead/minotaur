@@ -17,6 +17,9 @@ add_executable(t_local
 add_executable(t_lock_free_ring
   t_lock_free_ring.cpp)
 
+add_executable(t_sequencer
+  t_sequencer.cpp)
+
 add_executable(t_event_loop
   t_event_loop.cpp)
 
