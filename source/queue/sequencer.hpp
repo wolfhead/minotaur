@@ -17,11 +17,12 @@ class PlainCursor;
 class VolatileCursor;
 class CASCursor;
 template<typename T> class RingBuffer;
+template<typename T, typename ProducerCursor, typename ConsumerCursor> class Sequencer;
 
 template<
   typename T,
-  typename ProducerCursor = CASCursor,
-  typename ConsumerCursor = PlainCursor
+  typename ProducerCursor,
+  typename ConsumerCursor
   >
 class Sequencer {
  public:
@@ -54,16 +55,19 @@ class Sequencer {
   bool Pop(T* data) {
 
     uint64_t consumer_seq = consumer_curser_.Get();
+    BufferItem* item;
 
-    BufferItem& item = ring_.At(consumer_seq + 1);
-    if (item.flag != 2) {
-      return false;
-    }
+    do {
+      consumer_seq = consumer_curser_.Get();
+      item = &ring_.At(consumer_seq + 1);
+      if (item->flag != 2) {
+        return false;
+      }
+    } while (!consumer_curser_.Set(consumer_seq, consumer_seq + 1));
 
-    *data = item.value;
-    item.flag.store(0, boost::memory_order_release);
+    *data = item->value;
+    item->flag.store(0, boost::memory_order_release);
 
-    consumer_curser_.Inc();
     return true;
   }
 
@@ -93,7 +97,26 @@ class Sequencer {
   ConsumerCursor consumer_curser_;
 };
 
+template<typename T>
+class SPSCQueue : public Sequencer<T, PlainCursor, PlainCursor> {
+ public:
+  typedef Sequencer<T, PlainCursor, PlainCursor> super;
+  SPSCQueue(uint64_t size) : super(size) {};
+};
 
+template<typename T>
+class MPSCQueue : public Sequencer<T, CASCursor, PlainCursor> {
+ public:
+  typedef Sequencer<T, CASCursor, PlainCursor> super;
+  MPSCQueue(uint64_t size) : super(size) {};
+};
+
+template<typename T>
+class MPMCQueue : public Sequencer<T, CASCursor, CASCursor> {
+ public:
+  typedef Sequencer<T, CASCursor, CASCursor> super;
+  MPMCQueue(uint64_t size) : super(size) {};
+};
 
 class PlainCursor {
  public:

@@ -9,6 +9,9 @@
 
 BOOST_AUTO_TEST_SUITE(TestSequencer);
 
+//#define CHECK_RESULT 1
+typedef minotaur::queue::MPMCQueue<int64_t> Sequencer;
+
 BOOST_AUTO_TEST_CASE(TestRingBufferGetIndex) {
   minotaur::queue::RingBuffer<int> ring(1024);
 
@@ -30,11 +33,11 @@ BOOST_AUTO_TEST_CASE(TestRingBufferGetIndex) {
 }
 
 BOOST_AUTO_TEST_CASE(TestInit) {
-  minotaur::queue::Sequencer<int> sequencer(1024);
+  Sequencer sequencer(1024);
   BOOST_CHECK_EQUAL(0, sequencer.Size());
 
   bool result = false;
-  int value = 0;
+  int64_t value = 0;
   result = sequencer.Push(1);
   BOOST_CHECK_EQUAL(true, result);
   BOOST_CHECK_EQUAL(1, sequencer.Size());
@@ -79,9 +82,6 @@ BOOST_AUTO_TEST_CASE(TestInit) {
     BOOST_CHECK_EQUAL(1023 - 1 - i, sequencer.Size());
   }
 }
-
-typedef minotaur::queue::Sequencer<int64_t> Sequencer;
-#define CHECK_RESULT 1
 
 namespace {
 
@@ -190,12 +190,12 @@ void ConsumerProcFifo(zmt::FifoQueue<int64_t>* ring, std::vector<int64_t>* vec, 
 
 }//namespace 
 
-
+/*
 BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
   static const int ring_size = 1024*1024;
   static const int push_count = 10000000;
   static const int producer_count = 10;
-  static const int consumer_count = 1;
+  static const int consumer_count = 10;
 
   Sequencer ring(ring_size);
 
@@ -248,13 +248,13 @@ BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
   std::cout << "verify finish" << std::endl;
 #endif
 }
+*/
 
-/*
 BOOST_AUTO_TEST_CASE(TestThreadingFifo) {
   static const int ring_size = 1024 * 1024;
   static const int push_count = 10000000;
   static const int producer_count = 10;
-  static const int consumer_count = 1;
+  static const int consumer_count = 10;
 
   zmt::FifoQueue<int64_t> ring(ring_size);
 
@@ -307,6 +307,5 @@ BOOST_AUTO_TEST_CASE(TestThreadingFifo) {
   std::cout << "verify finish" << std::endl;
 #endif
 }
-*/
 
 BOOST_AUTO_TEST_SUITE_END()
