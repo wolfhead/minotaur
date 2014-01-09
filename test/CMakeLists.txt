@@ -2,6 +2,7 @@
 include_directories(
   ../source
   ${Boost_INCLUDE_DIRS}
+  ${ALLSPARK_INCLUDE_DIRS}
 )
 
 link_libraries(

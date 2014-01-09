@@ -5,11 +5,100 @@
   @author Wolfhead
 */
 
+#include <boost/thread.hpp>
+
 namespace minotaur { namespace queue {
+
+#define LF_CAS(a_ptr, a_oldVal, a_newVal) \
+__sync_bool_compare_and_swap(a_ptr, a_oldVal, a_newVal)
+
+
+class PlainCursor;
+class VolatileCursor;
+class CASCursor;
+template<typename T> class RingBuffer;
+
+template<
+  typename T,
+  typename ProducerCursor = CASCursor,
+  typename ConsumerCursor = PlainCursor
+  >
+class Sequencer {
+ public:
+  Sequencer(uint64_t size) 
+      : ring_(size) 
+      , producer_curser_(0xFFFFFFFFFFFFFFF0) 
+      , consumer_curser_(0xFFFFFFFFFFFFFFF0) {
+
+  }
+
+  bool Push(const T& data) {
+    uint64_t producer_seq;
+    BufferItem* item;
+
+    do {
+      producer_seq = producer_curser_.Get();
+      item = &ring_.At(producer_seq + 1);
+      if (item->flag != 0) {
+        return false;
+      }
+    } while (!producer_curser_.Set(producer_seq, producer_seq + 1));
+
+    item->value = data;
+    item->flag.store(2, boost::memory_order_release);
+
+    return true;
+  }
+
+
+  bool Pop(T* data) {
+
+    uint64_t consumer_seq = consumer_curser_.Get();
+
+    BufferItem& item = ring_.At(consumer_seq + 1);
+    if (item.flag != 2) {
+      return false;
+    }
+
+    *data = item.value;
+    item.flag.store(0, boost::memory_order_release);
+
+    consumer_curser_.Inc();
+    return true;
+  }
+
+  uint64_t Size() const {
+    uint64_t consumer_index = consumer_curser_.Get();
+    uint64_t producer_index = producer_curser_.Get();
+
+    if (producer_index >= consumer_index) {
+      return producer_index - consumer_index;
+    } else {
+      return 0xFFFFFFFFFFFFFFFF - (consumer_index - producer_index - 1);
+    }
+  }
+
+ private:
+  struct BufferItem {
+    BufferItem() : flag(0) {};
+
+    boost::atomic<char> flag;
+    T value;
+  };
+
+
+  RingBuffer<BufferItem> ring_;
+
+  ProducerCursor producer_curser_;
+  ConsumerCursor consumer_curser_;
+};
+
+
 
 class PlainCursor {
  public:
   PlainCursor() :sequence_(0) {}
+  PlainCursor(uint64_t sequence) :sequence_(sequence) {}
 
   uint64_t Get() const {return sequence_;}
   bool Set(uint64_t /*original*/, uint64_t sequence) {sequence_ = sequence; return true;}
@@ -17,11 +106,13 @@ class PlainCursor {
 
  private:
   uint64_t sequence_;
+  uint64_t padding_[7];
 };
 
 class VolatileCursor {
  public:
   VolatileCursor() :sequence_(0) {}
+  VolatileCursor(uint64_t sequence) :sequence_(sequence) {}
 
   uint64_t Get() const {return sequence_;}
   bool Set(uint64_t original, uint64_t sequence) {
@@ -35,6 +126,27 @@ class VolatileCursor {
   void Inc() {++sequence_;}
  private:
   volatile uint64_t sequence_;
+  uint64_t padding_[7];
+};
+
+class CASCursor {
+ public:
+  CASCursor() : sequence_(0) {}
+  CASCursor(uint64_t sequence) :sequence_(sequence) {}
+
+  uint64_t Get() const {return sequence_;}
+  bool Set(uint64_t original, uint64_t sequence) {return LF_CAS(&sequence_, original, sequence);}
+  void Inc() {
+    uint64_t original;
+    uint64_t inc;
+    do {
+      original = sequence_;
+      inc = original + 1;
+    } while (!Set(original, inc));
+  }
+ private:
+  volatile uint64_t sequence_;
+  uint64_t padding_[7];
 };
 
 template<
@@ -66,77 +178,6 @@ class RingBuffer {
   uint64_t mask_;
   T* buffer_;
 };
-
-template<
-  typename T
-  >
-class Sequencer {
- public:
-  Sequencer(uint64_t size) 
-      : ring_(size) {
-
-  }
-
-  bool Push(const T& data) {
-    uint64_t consumer_seq;
-    uint64_t producer_seq;
-    uint64_t claim_seq;
-
-    do {
-      consumer_seq = consumer_curser_.Get();
-      producer_seq = producer_curser_.Get();
-      claim_seq = producer_seq + 1;
-      if (claim_seq == consumer_seq || claim_seq == consumer_seq + ring_.Size()) {
-        return false;
-      }
-    } while (!producer_curser_.Set(producer_seq, claim_seq));
-
-    ring_.At(claim_seq) = data;
-
-    do {} while (!publisher_curser_.Set(producer_seq, claim_seq));
-
-    return true;
-  }
-
-
-  bool Pop(T* data) {
-    uint64_t consumer_seq = consumer_curser_.Get();
-    uint64_t publisher_seq = publisher_curser_.Get();
-
-    if (consumer_seq == publisher_seq) {
-      return false;
-    }
-
-    *data = ring_.At(consumer_seq);
-
-    consumer_curser_.Inc();
-    return true;
-  }
-
-  uint64_t Size() const {
-    uint64_t consumer_seq = consumer_curser_.Get();
-    uint64_t publisher_seq = publisher_curser_.Get();
-
-    if (publisher_seq >= consumer_seq) {
-      return publisher_seq - consumer_seq;
-    } else {
-      return consumer_seq + ring_.Size() - publisher_seq + ring_.Size();
-    }
-  }
-
- private:
-
-  RingBuffer<T> ring_;
-
-  PlainCursor producer_curser_;
-  PlainCursor publisher_curser_;
-  PlainCursor consumer_curser_;
-};
-
-
-
-
-
 
 } //namespace queue
 } //namespace minotaur
