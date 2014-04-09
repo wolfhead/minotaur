@@ -2,33 +2,38 @@
 include_directories(
   ../source
   ${Boost_INCLUDE_DIRS}
-  ${ALLSPARK_INCLUDE_DIRS}
 )
 
 link_libraries(
   ${Boost_LIBRARIES}
-  ${MINOTAUR_LIBRARIES}
+#${MINOTAUR_LIBRARIES}
   pthread
-  rt
+#  rt
 )
 
-add_executable(t_local
-  t_local.cpp)
+add_executable(t_tagged_ptr
+  t_tagged_ptr.cpp)
 
-add_executable(t_lock_free_ring
-  t_lock_free_ring.cpp)
+add_executable(t_freelist
+  t_freelist.cpp)
 
-add_executable(t_sequencer
-  t_sequencer.cpp)
+#add_executable(t_local
+#  t_local.cpp)
 
-add_executable(t_event_loop
-  t_event_loop.cpp)
+#add_executable(t_lock_free_ring
+#  t_lock_free_ring.cpp)
 
-add_executable(t_lf_static_list_pool
-  t_lf_static_list_pool.cpp)
+#add_executable(t_sequencer
+#  t_sequencer.cpp)
 
-add_executable(t_timer_slot
-  t_timer_slot.cpp)
+#add_executable(t_event_loop
+#  t_event_loop.cpp)
 
-add_executable(t_timer_wheel
-  t_timer_wheel.cpp)
+#add_executable(t_lf_static_list_pool
+#  t_lf_static_list_pool.cpp)
+
+#add_executable(t_timer_slot
+#  t_timer_slot.cpp)
+
+#add_executable(t_timer_wheel
+#  t_timer_wheel.cpp)

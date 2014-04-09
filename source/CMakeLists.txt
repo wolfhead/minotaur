@@ -23,6 +23,6 @@ set(MINOTAUR_SOURCE
   ${MINOTAUR_EVENT_SOURCE}
 )
 
-add_library(minotaur
-  ${MINOTAUR_SOURCE}
-)
+#add_library(minotaur
+#  ${MINOTAUR_SOURCE}
+#)
