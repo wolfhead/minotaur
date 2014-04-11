@@ -26,6 +26,8 @@ class tagged_ptr {
 
   tagged_ptr(const tagged_ptr& ptr) = default;
 
+  tagged_ptr(compressed_ptr_t v) : ptr_(v) {}
+
   tagged_ptr(const T* p, tag_t t) : ptr_(pack_ptr(p, t)) {}
 
   void set(const T* p, tag_t t) {ptr_ = pack_ptr(p, t);}
@@ -47,6 +49,10 @@ class tagged_ptr {
     T* p = get_ptr();
     ptr_ = pack_ptr(p, t);
   }
+
+  compressed_ptr_t get_raw() const {
+    return ptr_;
+  } 
   
   bool operator == (const volatile tagged_ptr& p) const {
     return ptr_ == p.ptr_;
@@ -72,14 +78,6 @@ class tagged_ptr {
     return tagged_ptr(get_ptr(), get_tag() + 1);
   }
 
- private:
-
-  union cast_unit
-  {
-    compressed_ptr_t value;
-    tag_t tag[4];
-  };
-
   static T* extract_ptr(const volatile compressed_ptr_t& i)
   {
     return (T*)(i & ptr_mask);
@@ -99,6 +97,14 @@ class tagged_ptr {
     ret.tag[tag_index] = tag;
     return ret.value;
   }
+
+ private:
+
+  union cast_unit
+  {
+    compressed_ptr_t value;
+    tag_t tag[4];
+  };
 
   compressed_ptr_t ptr_;
 };

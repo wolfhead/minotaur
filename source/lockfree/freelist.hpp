@@ -106,19 +106,17 @@ class fix_sized_freelist {
       }
     }
 
-    head_ = tagged_node_ptr((tagged_node*)mem_buffer_, 0); 
+    head_ = tagged_node_ptr((tagged_node*)mem_buffer_, 0).get_raw();
   }
 
   char* alloc_raw() {
-    tagged_node_ptr old_head = head_.load(std::memory_order_consume);
+    tagged_node_ptr old_head(head_.load(std::memory_order_consume));
 
     for(;;) {
       if (!old_head.get_ptr()) {
         return 0;
       }
-
       tagged_node_ptr new_head(old_head->next.get_ptr(), old_head.get_tag() + 1);
-
       if (head_.compare_exchange_weak(old_head, new_head)) {
         return reinterpret_cast<char*>(old_head.get_ptr());
       }
@@ -126,13 +124,12 @@ class fix_sized_freelist {
   }
 
   void dealloc_raw(char* buffer) {
-    tagged_node_ptr old_head = head_.load(std::memory_order_consume);
+    tagged_node_ptr old_head(head_.load(std::memory_order_consume));
     tagged_node * new_node = reinterpret_cast<tagged_node*>(buffer);
 
     for(;;) {
       tagged_node_ptr new_head(new_node, old_head.get_tag());
       new_head->next = old_head;
-
       if (head_.compare_exchange_weak(old_head, new_head)) {
         return;
       }
