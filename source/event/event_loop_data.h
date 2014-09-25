@@ -4,6 +4,7 @@
   @file event_loop_data.h
   @author Wolfhead
 */
+#include <stdint.h>
 
 namespace minotaur {
 namespace event {
@@ -18,29 +19,31 @@ struct EventType {
   };
 };
 
-typedef void FileEventProc(EventLoop *eventLoop, int fd, void *clientData, int mask);
+typedef void FdEventProc(EventLoop *eventLoop, int fd, void *clientData, uint32_t mask);
 
-struct FileEvent {
-  int mask;
-  FileEventProc* proc;
-  void* client_data;
+struct FdEvent {
+  uint32_t      mask;
+  FdEventProc*  proc;
+  void*         client_data;
 };
 
 struct FiredEvent {
-  int fd;
-  int mask;
+  uint32_t      fd;
+  uint32_t      mask;
 };
 
 struct EventLoopData {
-  EventLoopData(int set_size);
+  EventLoopData();
   ~EventLoopData();
 
-  bool  stop;
-  int   max_fd;
-  int   set_size;
-  FileEvent* file_events;
-  FiredEvent* fired_events;
-  void* impl_data;
+  void Init(uint32_t fd_size);
+  void Destroy();
+
+  bool          init;
+  uint32_t      fd_size;
+  FdEvent*      fd_events;
+  FiredEvent*   fired_events;
+  void*         impl_data;
 };
 
 } //namespace event

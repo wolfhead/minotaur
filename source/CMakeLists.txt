@@ -1,5 +1,9 @@
 INCLUDE (CheckSymbolExists)
 
+include_directories(
+  ${LOG4CPLUS_INCLUDE_DIRS}
+)
+
 CHECK_SYMBOL_EXISTS (epoll_wait "sys/epoll.h" HAS_EPOLL)
 CHECK_SYMBOL_EXISTS (kqueue "sys/event.h" HAS_KQUEUE)
 
@@ -19,10 +23,17 @@ set(MINOTAUR_SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h
   event/event_loop.cpp
   event/event_loop_data.cpp
-  event/timer/timer_wheel.cpp
+  event/event_loop_notifier.cpp
+  event/event_loop_thread.cpp
+  event/event_loop_stage.cpp
+  net/socket.cpp
+  net/acceptor.cpp
+  net/channel.cpp
+  net/io_buffer.cpp
+  #event/timer/timer_wheel.cpp
   ${MINOTAUR_EVENT_SOURCE}
 )
 
-#add_library(minotaur
-#  ${MINOTAUR_SOURCE}
-#)
+add_library(minotaur
+  ${MINOTAUR_SOURCE}
+)

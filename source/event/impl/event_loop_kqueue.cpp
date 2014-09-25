@@ -20,7 +20,7 @@ struct KqueueData {
 int EventLoopKqueue::Init(EventLoopData* el_data) {
   KqueueData* kq_data = new KqueueData;
 
-  kq_data->events = new struct kevent[el_data->set_size];
+  kq_data->events = new struct kevent[el_data->fd_size];
   kq_data->kqueue_fd = kqueue();
   if (kq_data->kqueue_fd == -1) {
     return -1;
@@ -49,7 +49,7 @@ int EventLoopKqueue::Destroy(EventLoopData* el_data) {
   return 0;
 }
 
-int EventLoopKqueue::AddEvent(EventLoopData* el_data, int fd, int mask) {
+int EventLoopKqueue::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
   KqueueData* kq_data = static_cast<KqueueData*>(el_data->impl_data);
   struct kevent ke;
 
@@ -65,7 +65,7 @@ int EventLoopKqueue::AddEvent(EventLoopData* el_data, int fd, int mask) {
   return 0;
 }
 
-int EventLoopKqueue::RemoveEvent(EventLoopData* el_data, int fd, int mask) {
+int EventLoopKqueue::RemoveEvent(EventLoopData* el_data, int fd, uint32_t mask) {
   KqueueData* kq_data = static_cast<KqueueData*>(el_data->impl_data);
   struct kevent ke;
 
@@ -81,7 +81,7 @@ int EventLoopKqueue::RemoveEvent(EventLoopData* el_data, int fd, int mask) {
   return 0;
 }
 
-int EventLoopKqueue::Poll(EventLoopData* el_data, int timeout) {
+int EventLoopKqueue::Poll(EventLoopData* el_data, uint32_t timeout) {
   KqueueData* kq_data = static_cast<KqueueData*>(el_data->impl_data);
   int ret = 0;
   if (timeout > 0) {
@@ -95,7 +95,7 @@ int EventLoopKqueue::Poll(EventLoopData* el_data, int timeout) {
             NULL, 
             0, 
             kq_data->events, 
-            el_data->set_size,
+            el_data->fd_size,
             &tout);
   } else {
     ret = kevent(
@@ -103,7 +103,7 @@ int EventLoopKqueue::Poll(EventLoopData* el_data, int timeout) {
             NULL, 
             0, 
             kq_data->events, 
-            el_data->set_size,
+            el_data->fd_size,
             NULL);
   }
 

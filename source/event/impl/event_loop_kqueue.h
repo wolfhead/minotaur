@@ -4,6 +4,7 @@
   @file event_loop_kqueue.h
   @author Wolfhead
 */
+#include <stdint.h>
 
 namespace minotaur {
 namespace event {
@@ -13,9 +14,9 @@ class EventLoopKqueue {
  public:
   static int Init(EventLoopData* el_data);
   static int Destroy(EventLoopData* el_data);
-  static int AddEvent(EventLoopData* el_data, int fd, int mask);
-  static int RemoveEvent(EventLoopData* el_data, int fd, int mask);
-  static int Poll(EventLoopData* el_data, int timeout);
+  static int AddEvent(EventLoopData* el_data, int fd, uint32_t mask);
+  static int RemoveEvent(EventLoopData* el_data, int fd, uint32_t mask);
+  static int Poll(EventLoopData* el_data, uint32_t timeout);
   static const char* GetImplement();
 };
 

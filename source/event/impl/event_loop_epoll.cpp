@@ -6,9 +6,11 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include "../event_loop_data.h"
+#include "../../common/system_error.h"
 
-namespace minotaur {
-namespace event {
+namespace minotaur { namespace event {
+
+LOGGER_CLASS_IMPL_NAME(logger, EventLoopEpoll, "event.EventLoopEpoll");
 
 struct EpollData {
   int epoll_fd;
@@ -16,11 +18,16 @@ struct EpollData {
 };
 
 int EventLoopEpoll::Init(EventLoopData* el_data) {
-  EpollData* ep_data = new EpollData;
+  if (!el_data || !el_data->init) {
+    return -1;
+  }
 
-  ep_data->events = new epoll_event[el_data->set_size];
+  EpollData* ep_data = new EpollData;
+  ep_data->events = new epoll_event[el_data->fd_size];
   ep_data->epoll_fd = epoll_create(1024);
   if (ep_data->epoll_fd == -1) {
+    LOG_ERROR(logger, "EventLoopEpoll::Init fail with error:" 
+        << SystemError::FormatMessage());
     return -1;
   }
 
@@ -48,31 +55,37 @@ int EventLoopEpoll::Destroy(EventLoopData* el_data) {
   return 0;
 }
 
-int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, int mask) {
+int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
   EpollData* ep_data = static_cast<EpollData*>(el_data->impl_data);
 
   struct epoll_event ee;
 
-  int op = el_data->file_events[fd].mask == EventType::EV_NONE ?
+  int op = el_data->fd_events[fd].mask == EventType::EV_NONE ?
            EPOLL_CTL_ADD : EPOLL_CTL_MOD;
 
   ee.events = 0;
-  mask |= el_data->file_events[fd].mask; /* Merge old events */
+  mask |= el_data->fd_events[fd].mask; /* Merge old events */
   if (mask & EventType::EV_READ) ee.events |= EPOLLIN;
   if (mask & EventType::EV_WRITE) ee.events |= EPOLLOUT;
+
+  //TODO
+  ee.events |= EPOLLET; // expiremental
+
   ee.data.u64 = 0; /* avoid valgrind warning */
   ee.data.fd = fd;
 
   if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1) {
+    LOG_ERROR(logger, "EventLoopEpoll::AddEvent fail with error:" 
+        << SystemError::FormatMessage());
     return -1;
   }
   return 0;
 }
 
-int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, int del_mask) {
+int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, uint32_t del_mask) {
   EpollData* ep_data = static_cast<EpollData*>(el_data->impl_data);
   struct epoll_event ee;
-  int mask = el_data->file_events[fd].mask & (~del_mask);
+  int mask = el_data->fd_events[fd].mask & (~del_mask);
 
   ee.events = 0;
   if (mask & EventType::EV_READ) ee.events |= EPOLLIN;
@@ -80,19 +93,21 @@ int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, int del_mask) {
   ee.data.u64 = 0; /* avoid valgrind warning */
   ee.data.fd = fd;
 
-  int op = el_data->file_events[fd].mask == EventType::EV_NONE ?
+  int op = el_data->fd_events[fd].mask == EventType::EV_NONE ?
            EPOLL_CTL_MOD : EPOLL_CTL_DEL;
 
   if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1) {
+    LOG_ERROR(logger, "EventLoopEpoll::AddEvent fail with error:" 
+        << SystemError::FormatMessage());
     return -1;
   }
   return 0;
 }
 
-int EventLoopEpoll::Poll(EventLoopData* el_data, int timeout) {
+int EventLoopEpoll::Poll(EventLoopData* el_data, uint32_t timeout) {
   EpollData* ep_data = static_cast<EpollData*>(el_data->impl_data);
 
-  int ret = epoll_wait(ep_data->epoll_fd, ep_data->events, el_data->set_size, timeout);
+  int ret = epoll_wait(ep_data->epoll_fd, ep_data->events, el_data->fd_size, timeout);
   if (ret > 0) {
     int events_num = ret;
     for (int i = 0; i != events_num; i++) {
