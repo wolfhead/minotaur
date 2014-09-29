@@ -70,7 +70,7 @@ template <typename Handler>
 void StageWorker<Handler>::Run() {
   MessageType message;
   while (running_) {
-    if (!queue_->Consume(&message, 500)) {
+    if (!queue_->Pop(&message, 5)) {
       continue;
     }
     handler_->Handle(message);
@@ -118,7 +118,7 @@ void Stage<Handler>::Stop() {
 template <typename Handler>
 bool Stage<Handler>::Send(const MessageType& message) {
   return worker_[Handler::HashMessage(message, worker_count_)]
-    .GetMessageQueue()->Produce(message);
+    .GetMessageQueue()->Push(message);
 }
 
 template <typename Handler>

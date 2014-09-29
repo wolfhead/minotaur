@@ -5,15 +5,31 @@
  * @author Wolfhead
  */
 #include <boost/thread.hpp>
+#include <queue/sequencer.hpp>
 #include "message_queue.h"
 
 namespace minotaur {
+
+
+template<typename MessageType, bool shared>
+struct QueueHelper {
+};
+
+template<typename MessageType>
+struct QueueHelper<MessageType, true> {
+  typedef typename queue::MPMCQueue<MessageType, queue::ConditionVariableStrategy> MessageQueueType;
+};
+
+template<typename MessageType>
+struct QueueHelper<MessageType, false> {
+  typedef typename queue::MPSCQueue<MessageType, queue::ConditionVariableStrategy> MessageQueueType;
+};
 
 template <typename Handler>
 class StageWorker {
  public:
   typedef typename Handler::MessageType MessageType;
-  typedef MessageQueue<MessageType> MessageQueueType;
+  typedef typename QueueHelper<MessageType, Handler::share_queue>::MessageQueueType MessageQueueType;
 
   StageWorker(); 
 
@@ -46,9 +62,9 @@ class StageWorker {
 template <typename Handler>
 class Stage {
  public:
-  typedef typename Handler::MessageType MessageType;
-  typedef MessageQueue<MessageType> MessageQueueType;
   typedef StageWorker<Handler> StageWorkerType;
+  typedef typename Handler::MessageType MessageType;
+  typedef typename QueueHelper<MessageType, Handler::share_queue>::MessageQueueType MessageQueueType;
 
   Stage(uint32_t worker_count, uint32_t queue_size);
 

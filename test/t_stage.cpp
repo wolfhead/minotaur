@@ -29,7 +29,6 @@ class DummyHandler {
   } 
 
   void Handle(const MessageType& message) {
-    LOG_TRACE(logger, "message:" << message);
     if (message == 0) {
       LOG_TRACE(logger, "quit stage");
       stage_->Stop();
@@ -132,7 +131,6 @@ BOOST_AUTO_TEST_CASE(testOwnStage) {
   BOOST_CHECK_EQUAL(0, ret);
 
   boost::thread t1(boost::bind(&InputLatency, &test_stage, 10000000));
-
 
   test_stage.Wait();
   t1.join();
