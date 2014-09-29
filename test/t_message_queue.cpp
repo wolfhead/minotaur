@@ -22,7 +22,8 @@ void Consume(QueueType* queue, boost::atomic<uint64_t>* target, bool check) {
   uint64_t i = 0;
   bool ret = false;
   uint64_t tmp = 0;
-  while (target->fetch_sub(1) > 1) {
+  uint64_t loop = true;
+  while (loop) {
     ret = queue->Consume(&tmp, 100);
     if (!ret) {
       continue;
@@ -34,6 +35,7 @@ void Consume(QueueType* queue, boost::atomic<uint64_t>* target, bool check) {
           << ", i:" << i);
     } else {
       ++i;
+      loop = target->fetch_sub(1) > 1;
     }
   }
 
@@ -55,7 +57,7 @@ void Produce(QueueType* queue, int target) {
 BOOST_AUTO_TEST_CASE(testMM) {
   QueueType queue(1024 * 1024);
   uint64_t producer_count = 1;
-  uint64_t consumer_count = 2;
+  uint64_t consumer_count = 1;
   uint64_t producer_target = 10000000;
   boost::atomic<uint64_t> consumer_target(10000000 * producer_count);
 

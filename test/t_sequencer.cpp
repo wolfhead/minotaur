@@ -6,6 +6,7 @@
 #include <queue/sequencer.hpp>
 #undef private
 #include <common/logger.h>
+#include <common/time_util.h>
 #include "unittest_logger.h"
 
 BOOST_AUTO_TEST_SUITE(TestSequencer);
@@ -13,8 +14,11 @@ BOOST_AUTO_TEST_SUITE(TestSequencer);
 static minotaur::unittest::UnittestLogger logger_config;
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
+using namespace minotaur;
+using namespace minotaur::queue;
+
 #define CHECK_RESULT 1
-typedef minotaur::queue::MPMCQueue<int64_t> Sequencer;
+typedef minotaur::queue::MPMCQueue<int64_t, ConditionVariableStrategy> Sequencer;
 
 BOOST_AUTO_TEST_CASE(TestRingBufferGetIndex) {
   minotaur::queue::RingBuffer<int> ring(1024);
@@ -54,24 +58,26 @@ BOOST_AUTO_TEST_CASE(TestInit) {
   BOOST_CHECK_EQUAL(true, result);
   BOOST_CHECK_EQUAL(3, sequencer.Size());
 
-  result = sequencer.Pop(&value);
+  result = sequencer.Pop(&value, 1);
   BOOST_CHECK_EQUAL(true, result);
   BOOST_CHECK_EQUAL(1, value);
   BOOST_CHECK_EQUAL(2, sequencer.Size());
 
-  result = sequencer.Pop(&value);
+  result = sequencer.Pop(&value, 1);
   BOOST_CHECK_EQUAL(true, result);
   BOOST_CHECK_EQUAL(2, value);
   BOOST_CHECK_EQUAL(1, sequencer.Size());
 
-  result = sequencer.Pop(&value);
+  result = sequencer.Pop(&value, 1);
   BOOST_CHECK_EQUAL(true, result);
   BOOST_CHECK_EQUAL(3, value);
   BOOST_CHECK_EQUAL(0, sequencer.Size());
 
-  result = sequencer.Pop(&value);
-  BOOST_CHECK_EQUAL(false, result);
-  BOOST_CHECK_EQUAL(0, sequencer.Size());
+  if (!sequencer.WouldBlock()) {
+    result = sequencer.Pop(&value, 1);
+    BOOST_CHECK_EQUAL(false, result);
+    BOOST_CHECK_EQUAL(0, sequencer.Size());
+  }
 
   for (int i = 0; i != 1023; ++i) {
     result = sequencer.Push(i);
@@ -80,7 +86,7 @@ BOOST_AUTO_TEST_CASE(TestInit) {
   }
 
   for (int i = 0; i != 1023; ++i) {
-    result = sequencer.Pop(&value);
+    result = sequencer.Pop(&value, 1);
     BOOST_CHECK_EQUAL(true, result);
     BOOST_CHECK_EQUAL(i, value);
     BOOST_CHECK_EQUAL(1023 - 1 - i, sequencer.Size());
@@ -113,7 +119,7 @@ void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mut
   int pop_success = 0;
   int pop_fail = 0;
   while (true) {
-    if (!ring->Pop(&value)) {
+    if (!ring->Pop(&value, 10)) {
       if (!g_running) {
         break;
       } else {
@@ -148,9 +154,9 @@ void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mut
 
 BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
   static const int ring_size = 1024*1024;
-  static const int push_count = 10000000;
-  static const int producer_count = 10;
-  static const int consumer_count = 10;
+  static const int push_count = 100000000;
+  static const int producer_count = 2;
+  static const int consumer_count = 2;
 
   Sequencer ring(ring_size);
 
@@ -159,6 +165,8 @@ BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
 
   std::vector<int64_t> result_vec[producer_count];
   boost::mutex mutex_vec[producer_count];
+
+  auto start = boost::posix_time::microsec_clock::local_time();
 
   for (int i = 0; i != producer_count; ++i) {
     boost::thread* t = new boost::thread(boost::bind(ProducerProcLockFree, &ring, i, push_count));
@@ -183,6 +191,11 @@ BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
        ++it) {
     (*it)->join();
   }
+
+  auto end  = boost::posix_time::microsec_clock::local_time();
+  auto diff = end - start;
+  LOG_TRACE(logger, "TestThreadingLockFree finish:" << diff.total_milliseconds());
+
 #ifdef CHECK_RESULT
   std::cout << "consumer finish, start verify" << std::endl;
 

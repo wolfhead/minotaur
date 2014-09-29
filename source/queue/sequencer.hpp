@@ -16,13 +16,22 @@ __sync_bool_compare_and_swap(a_ptr, a_oldVal, a_newVal)
 class PlainCursor;
 class VolatileCursor;
 class CASCursor;
+class NoWaitStrategy;
+class BusyLoopStrategy;
+class ConditionVariableStrategy;
 template<typename T> class RingBuffer;
-template<typename T, typename ProducerCursor, typename ConsumerCursor> class Sequencer;
+template<
+  typename T, 
+  typename ProducerCursor, 
+  typename ConsumerCursor, 
+  typename WaitStrategy> 
+class Sequencer;
 
 template<
   typename T,
   typename ProducerCursor,
-  typename ConsumerCursor
+  typename ConsumerCursor,
+  typename WaitStrategy
   >
 class Sequencer {
  public:
@@ -40,36 +49,43 @@ class Sequencer {
     do {
       producer_seq = producer_curser_.Get();
       item = &ring_.At(producer_seq + 1);
-      if (item->flag != 0) {
+      if (item->flag.load(boost::memory_order_acquire) != BufferItem::kEmptyItem) {
         return false;
       }
     } while (!producer_curser_.Set(producer_seq, producer_seq + 1));
 
     item->value = data;
-    item->flag.store(2, boost::memory_order_release);
+    item->flag.store(BufferItem::kOccupiedItem, boost::memory_order_release);
+
+    wait_.Notify();
 
     return true;
   }
 
-
-  bool Pop(T* data) {
-
+  bool Pop(T* data, uint32_t milliseconds = 0) {
     uint64_t consumer_seq = consumer_curser_.Get();
+    bool loop = true;
     BufferItem* item;
 
     do {
       consumer_seq = consumer_curser_.Get();
       item = &ring_.At(consumer_seq + 1);
-      if (item->flag != 2) {
-        return false;
+      if (item->flag.load(boost::memory_order_acquire) != BufferItem::kOccupiedItem) {
+        if (milliseconds == 0 ? wait_.Wait() : wait_.TimedWait(milliseconds)) {
+          continue;
+        } else {
+          return false;
+        }
       }
-    } while (!consumer_curser_.Set(consumer_seq, consumer_seq + 1));
+      loop = !consumer_curser_.Set(consumer_seq, consumer_seq + 1);
+    } while (loop);
 
     *data = item->value;
-    item->flag.store(0, boost::memory_order_release);
+    item->flag.store(BufferItem::kEmptyItem, boost::memory_order_release);
 
     return true;
   }
+
 
   uint64_t Size() const {
     uint64_t consumer_index = consumer_curser_.Get();
@@ -82,10 +98,18 @@ class Sequencer {
     }
   }
 
+  bool WouldBlock() const {
+    return wait_.WouldBlock();
+  }
+
  private:
   struct BufferItem {
-    BufferItem() : flag(0) {};
+    enum {
+      kEmptyItem = 0,
+      kOccupiedItem = 1,
+    };
 
+    BufferItem() : flag(kEmptyItem) {};
     boost::atomic<char> flag;
     T value;
   };
@@ -97,26 +121,34 @@ class Sequencer {
   char padding_1[64];
   ConsumerCursor consumer_curser_;
   char padding_2[64];
+  WaitStrategy wait_;
 };
 
-template<typename T>
-class SPSCQueue : public Sequencer<T, PlainCursor, PlainCursor> {
+template<typename T, typename WaitStrategy = NoWaitStrategy>
+class SPSCQueue : public Sequencer<T, PlainCursor, PlainCursor, WaitStrategy> {
  public:
-  typedef Sequencer<T, PlainCursor, PlainCursor> super;
+  typedef Sequencer<T, PlainCursor, PlainCursor, WaitStrategy> super;
   SPSCQueue(uint64_t size) : super(size) {};
 };
 
-template<typename T>
-class MPSCQueue : public Sequencer<T, CASCursor, PlainCursor> {
+template<typename T, typename WaitStrategy = NoWaitStrategy>
+class SPMCQueue : public Sequencer<T, PlainCursor, CASCursor, WaitStrategy> {
  public:
-  typedef Sequencer<T, CASCursor, PlainCursor> super;
+  typedef Sequencer<T, PlainCursor, CASCursor, WaitStrategy> super;
+  SPMCQueue(uint64_t size) : super(size) {};
+};
+
+template<typename T, typename WaitStrategy = NoWaitStrategy>
+class MPSCQueue : public Sequencer<T, CASCursor, PlainCursor, WaitStrategy> {
+ public:
+  typedef Sequencer<T, CASCursor, PlainCursor, WaitStrategy> super;
   MPSCQueue(uint64_t size) : super(size) {};
 };
 
-template<typename T>
-class MPMCQueue : public Sequencer<T, CASCursor, CASCursor> {
+template<typename T, typename WaitStrategy = NoWaitStrategy>
+class MPMCQueue : public Sequencer<T, CASCursor, CASCursor, WaitStrategy> {
  public:
-  typedef Sequencer<T, CASCursor, CASCursor> super;
+  typedef Sequencer<T, CASCursor, CASCursor, WaitStrategy> super;
   MPMCQueue(uint64_t size) : super(size) {};
 };
 
@@ -131,7 +163,7 @@ class PlainCursor {
 
  private:
   uint64_t sequence_;
-  uint64_t padding_[7];
+  uint64_t padding_[8];
 };
 
 class VolatileCursor {
@@ -151,7 +183,7 @@ class VolatileCursor {
   void Inc() {++sequence_;}
  private:
   volatile uint64_t sequence_;
-  uint64_t padding_[7];
+  uint64_t padding_[8];
 };
 
 class CASCursor {
@@ -171,7 +203,47 @@ class CASCursor {
   }
  private:
   volatile uint64_t sequence_;
-  uint64_t padding_[7];
+  uint64_t padding_[8];
+};
+
+class NoWaitStrategy {
+ public:
+  void Notify() {}
+  bool Wait() {return false;}
+  bool TimedWait(uint32_t milliseconds) {return false;}
+  bool WouldBlock() const {return false;}
+};
+
+class BusyLoopStrategy {
+ public:
+  void Notify() {}
+  bool Wait() {return true;}
+  bool TimedWait(uint32_t milliseconds) {return true;}
+  bool WouldBlock() const {return true;}
+};
+
+class ConditionVariableStrategy {
+ public:
+  void Notify() {cond_.notify_all();}
+  bool Wait() {
+    boost::unique_lock<boost::mutex> lock(lock_);
+    cond_.wait(lock);
+    return true;
+  }
+
+  bool TimedWait(uint32_t milliseconds) {
+    boost::system_time timeout = 
+          boost::get_system_time() + 
+          boost::posix_time::milliseconds(milliseconds);  
+    boost::unique_lock<boost::mutex> lock(lock_);
+    return cond_.timed_wait(lock, timeout);
+  }
+
+  bool WouldBlock() const {return true;}
+
+ private:
+  boost::condition_variable cond_;
+  boost::mutex lock_;
 };
 
 template<

@@ -76,7 +76,6 @@ MessageQueue<T>::~MessageQueue() {
   queue_ = NULL;
 }
 
-/*
 template<typename T>
 bool MessageQueue<T>::Produce(const T& value) {
   {
@@ -92,8 +91,8 @@ bool MessageQueue<T>::Produce(const T& value) {
   queue_condition_.notify_all();
   return true;
 }
-*/
 
+/*
 template<typename T>
 bool MessageQueue<T>::Produce(const T& value) {
   spinlock_.lock();
@@ -110,9 +109,9 @@ bool MessageQueue<T>::Produce(const T& value) {
   queue_condition_.notify_all();
   return true;
 }
+*/
 
 
-/*
 template<typename T>
 bool MessageQueue<T>::Consume(T* value, uint32_t timeout_milliseconds) {
   boost::unique_lock<boost::mutex> lock(consumer_lock_);
@@ -134,8 +133,8 @@ bool MessageQueue<T>::Consume(T* value, uint32_t timeout_milliseconds) {
 
   return true;
 }
-*/
 
+/*
 template<typename T>
 bool MessageQueue<T>::Consume(T* value, uint32_t timeout_milliseconds) {
   uint32_t consumer_offset;
@@ -179,7 +178,7 @@ bool MessageQueue<T>::Consume(T* value, uint32_t timeout_milliseconds) {
   *value = queue_[consumer_togo];
   return true;
 }
-
+*/
 
 } //namespacex minotaur
 
