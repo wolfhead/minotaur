@@ -28,8 +28,8 @@ class Sequencer {
  public:
   Sequencer(uint64_t size) 
       : ring_(size) 
-      , producer_curser_(0xFFFFFFFFFFFFFFF0) 
-      , consumer_curser_(0xFFFFFFFFFFFFFFF0) {
+      , producer_curser_(0) 
+      , consumer_curser_(0) {
 
   }
 
@@ -94,7 +94,9 @@ class Sequencer {
   RingBuffer<BufferItem> ring_;
 
   ProducerCursor producer_curser_;
+  char padding_1[64];
   ConsumerCursor consumer_curser_;
+  char padding_2[64];
 };
 
 template<typename T>

@@ -29,8 +29,8 @@ link_libraries(
 #add_executable(t_lock_free_ring
 #  t_lock_free_ring.cpp)
 
-#add_executable(t_sequencer
-#  t_sequencer.cpp)
+add_executable(t_sequencer
+  t_sequencer.cpp)
 
 add_executable(t_event_loop
   t_event_loop.cpp)
@@ -40,6 +40,9 @@ add_executable(t_io_buffer
 
 add_executable(t_message_queue
   t_message_queue.cpp)
+
+add_executable(t_stage
+  t_stage.cpp)
 
 #add_executable(t_lf_static_list_pool
 #  t_lf_static_list_pool.cpp)

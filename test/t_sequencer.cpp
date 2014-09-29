@@ -5,11 +5,15 @@
 #define private public
 #include <queue/sequencer.hpp>
 #undef private
-#include <allspark/fifo.h>
+#include <common/logger.h>
+#include "unittest_logger.h"
 
 BOOST_AUTO_TEST_SUITE(TestSequencer);
 
-//#define CHECK_RESULT 1
+static minotaur::unittest::UnittestLogger logger_config;
+LOGGER_STATIC_DECL_IMPL(logger, "root");
+
+#define CHECK_RESULT 1
 typedef minotaur::queue::MPMCQueue<int64_t> Sequencer;
 
 BOOST_AUTO_TEST_CASE(TestRingBufferGetIndex) {
@@ -99,7 +103,9 @@ void ProducerProcLockFree(Sequencer* ring, int id, int count) {
       ++i;
     }
   }
-  //std::cout << "ProducerProcLockFree finish, push_fail:" << push_fail << std::endl;
+  LOG_TRACE(logger, "ProducerProcLockFree finish"
+      << ", push_fail:" << push_fail
+      << ", push_success:" << i);
 }
 
 void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mutex* mutex) {
@@ -133,64 +139,13 @@ void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mut
     value = -1;
   }
 
-  //std::cout << "ConsumerProcLockFree finish, pop success:" << pop_success
-  //          << ", pop fail:" << pop_fail << std::endl;
+  LOG_TRACE(logger, "ConsumerProcLockFree finish"
+      << "pop success:" << pop_success
+      << ", pop fail:" << pop_fail);
 }
-
-void ProducerProcFifo(zmt::FifoQueue<int64_t>* ring, int id, int count) {
-  int push_fail = 0;
-  int i = 0;
-  while (i != count) {
-    int64_t value = ((int64_t)id << 32) | i;
-    if (!ring->push_back(0, value)) {
-      ++push_fail;
-      usleep(0);
-    } else {
-      ++i;
-    }
-  }
-  //std::cout << "ProducerProcLockFree finish, push_fail:" << push_fail << std::endl;
-}
-
-void ConsumerProcFifo(zmt::FifoQueue<int64_t>* ring, std::vector<int64_t>* vec, boost::mutex* mutex) {
-  int64_t value = -1;
-  int pop_success = 0;
-  int pop_fail = 0;
-  while (true) {
-    if (!ring->pop_front(0, &value)) {
-      if (!g_running) {
-        break;
-      } else {
-        continue;
-      }
-    }
-
-    if (value == -1) {
-      ++pop_fail;
-      continue;
-    }
-
-    ++pop_success;
-#ifdef CHECK_RESULT
-    int id = value >> 32 & 0xFFFFFFFF;
-    value = value & 0xFFFFFFFF;
-
-    {
-      boost::mutex::scoped_lock lock(mutex[id]);
-      vec[id].push_back(value);
-    }
-#endif
-    value = -1;
-  }
-
-  //std::cout << "ConsumerProcLockFree finish, pop success:" << pop_success
-  //          << ", pop fail:" << pop_fail << std::endl;
-}
-
 
 }//namespace 
 
-/*
 BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
   static const int ring_size = 1024*1024;
   static const int push_count = 10000000;
@@ -212,65 +167,6 @@ BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
 
   for (int i = 0; i != consumer_count; ++i) {
     boost::thread* t = new boost::thread(boost::bind(ConsumerProcLockFree, &ring, result_vec, mutex_vec));
-    consumer_threads.push_back(t);
-  }
-
-  for (std::vector<boost::thread*>::iterator it = producer_threads.begin();
-       it != producer_threads.end();
-       ++it) {
-    (*it)->join();
-  }
-
-  g_running = false;
-
-  for (std::vector<boost::thread*>::iterator it = consumer_threads.begin();
-       it != consumer_threads.end();
-       ++it) {
-    (*it)->join();
-  }
-#ifdef CHECK_RESULT
-  std::cout << "consumer finish, start verify" << std::endl;
-
-  for (int i = 0; i != producer_count; ++i) {
-    BOOST_CHECK_EQUAL(result_vec[i].size(), push_count);
-    if ((int)result_vec[i].size() != push_count) {
-      std::cout << "size not fit, i:" << i;
-      continue;
-    }
-
-    std::sort(result_vec[i].begin(), result_vec[i].end());
-
-    for (int j = 0; j != push_count; ++j) {
-      BOOST_CHECK_EQUAL(result_vec[i][j], j);
-    }
-  }
-
-  std::cout << "verify finish" << std::endl;
-#endif
-}
-*/
-
-BOOST_AUTO_TEST_CASE(TestThreadingFifo) {
-  static const int ring_size = 1024 * 1024;
-  static const int push_count = 10000000;
-  static const int producer_count = 10;
-  static const int consumer_count = 10;
-
-  zmt::FifoQueue<int64_t> ring(ring_size);
-
-  std::vector<boost::thread*> producer_threads;
-  std::vector<boost::thread*> consumer_threads;
-
-  std::vector<int64_t> result_vec[producer_count];
-  boost::mutex mutex_vec[producer_count];
-
-  for (int i = 0; i != producer_count; ++i) {
-    boost::thread* t = new boost::thread(boost::bind(ProducerProcFifo, &ring, i, push_count));
-    producer_threads.push_back(t);
-  }
-
-  for (int i = 0; i != consumer_count; ++i) {
-    boost::thread* t = new boost::thread(boost::bind(ConsumerProcFifo, &ring, result_vec, mutex_vec));
     consumer_threads.push_back(t);
   }
 

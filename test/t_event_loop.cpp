@@ -8,6 +8,7 @@
 #include <boost/test/unit_test.hpp>
 #include <event/event_loop.h>
 #include <event/event_loop_stage.h>
+#include <net/socket_op.h>
 #include <net/acceptor.h>
 #include <common/system_error.h>
 #include <io_service.h>
@@ -23,13 +24,11 @@ LOGGER_STATIC_DECL_IMPL(logger, "root");
 BOOST_AUTO_TEST_SUITE(TestEventLoop);
 
 void FileEventProc(EventLoop *eventLoop, int fd, void *clientData, uint32_t mask) {
-
   std::cout << "EventProc ->" << std::endl;
-
   char buffer[1024] = {0};
   std::string result;
 
-  if (mask | EventType::EV_READ) {
+  if (mask & EventType::EV_READ) {
     while (1) {
       int got = read(fd, buffer, 1024);
       if (got <= 0) {
@@ -44,7 +43,6 @@ void FileEventProc(EventLoop *eventLoop, int fd, void *clientData, uint32_t mask
   }
 }
 
-/*
 BOOST_AUTO_TEST_CASE(TestCompile) {
   EventLoop el;
   int ret = 0;
@@ -52,17 +50,18 @@ BOOST_AUTO_TEST_CASE(TestCompile) {
   ret = el.Init(65535);
   BOOST_CHECK_EQUAL(ret, 0);
 
-  int flags = fcntl(0, F_GETFL, 0);
-  fcntl(0, F_SETFL, flags | O_NONBLOCK);
-  BOOST_CHECK_EQUAL(ret, 0);
+  ret = SocketOperation::SetNonBlocking(0);
+  BOOST_CHECK_EQUAL(0, ret);
 
   int i = 10;
+  ret = el.AddEvent(0, EventType::EV_READ, &FileEventProc, NULL);
+  BOOST_CHECK_EQUAL(0, ret);
+
   while (i--) {
-    ret = el.AddEvent(0, EventType::EV_READ, &FileEventProc, NULL);
     ret = el.ProcessEvent(1000);
   }
 }
-*/
+
 BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   EventLoopStage stage(4, 65535);
   int ret = stage.Start();
