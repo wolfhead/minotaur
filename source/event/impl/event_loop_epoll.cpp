@@ -70,6 +70,7 @@ int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
 
   //TODO
   ee.events |= EPOLLET; // expiremental
+  ee.events |= EPOLLRDHUP;
 
   ee.data.u64 = 0; /* avoid valgrind warning */
   ee.data.fd = fd;
@@ -85,7 +86,7 @@ int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
 int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, uint32_t del_mask) {
   EpollData* ep_data = static_cast<EpollData*>(el_data->impl_data);
   struct epoll_event ee;
-  int mask = el_data->fd_events[fd].mask & (~del_mask);
+  uint32_t mask = el_data->fd_events[fd].mask & (~del_mask);
 
   ee.events = 0;
   if (mask & EventType::EV_READ) ee.events |= EPOLLIN;
@@ -97,10 +98,15 @@ int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, uint32_t del_mas
            EPOLL_CTL_MOD : EPOLL_CTL_DEL;
 
   if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1) {
-    LOG_ERROR(logger, "EventLoopEpoll::AddEvent fail with error:" 
-        << SystemError::FormatMessage());
+    LOG_ERROR(logger, "EventLoopEpoll::RemoveEvent fail with error:" 
+        << SystemError::FormatMessage()
+        << ", fd:" << fd
+        << ", mask:" << mask);
     return -1;
   }
+
+  el_data->fd_events[fd].mask = mask;
+
   return 0;
 }
 
@@ -117,7 +123,9 @@ int EventLoopEpoll::Poll(EventLoopData* el_data, uint32_t timeout) {
       if (e->events & EPOLLIN) mask |= EventType::EV_READ;
       if (e->events & EPOLLOUT) mask |= EventType::EV_WRITE;
       if (e->events & EPOLLERR) mask |= EventType::EV_WRITE;
-      if (e->events & EPOLLHUP) mask |= EventType::EV_WRITE;
+      if (e->events & EPOLLHUP) mask |= EventType::EV_CLOSE;
+      if (e->events & EPOLLRDHUP) mask |= EventType::EV_CLOSE;
+
       el_data->fired_events[i].fd = e->data.fd;
       el_data->fired_events[i].mask = mask;
     }

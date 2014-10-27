@@ -130,7 +130,6 @@ void ProduceLatency(QueueType* queue, int target) {
 
 }
 
-/*
 BOOST_AUTO_TEST_CASE(testLatency) {
   QueueType queue(1024 * 1024);
   size_t producer_count = 1;
@@ -161,6 +160,5 @@ BOOST_AUTO_TEST_CASE(testLatency) {
 
   LOG_TRACE(logger, "testLatency finish:" << diff.total_milliseconds());
 }
-*/
 
 BOOST_AUTO_TEST_SUITE_END()

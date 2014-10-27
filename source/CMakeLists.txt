@@ -21,6 +21,7 @@ ENDIF()
 
 set(MINOTAUR_SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h
+  ${MINOTAUR_EVENT_SOURCE}
   event/event_loop.cpp
   event/event_loop_data.cpp
   event/event_loop_notifier.cpp
@@ -31,7 +32,7 @@ set(MINOTAUR_SOURCE
   net/channel.cpp
   net/io_buffer.cpp
   #event/timer/timer_wheel.cpp
-  ${MINOTAUR_EVENT_SOURCE}
+  matrix/matrix_item_map.cpp
 )
 
 add_library(minotaur

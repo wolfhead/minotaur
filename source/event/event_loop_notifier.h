@@ -13,8 +13,9 @@ struct NotifyMessage {
   enum {
     ADD_READ = 1,
     ADD_WRITE = 2,
-    REMOVE_READ = 3,
-    REMOVE_WRITE = 4,
+    ADD_CLOSE = 3,
+    REMOVE_READ = 4,
+    REMOVE_WRITE = 5,
   };
 
   int32_t       fd;
@@ -39,6 +40,8 @@ class EventLoopNotifier {
   int RegisterRead(int fd, FdEventProc* proc, void* data);
 
   int RegisterWrite(int fd, FdEventProc* proc, void* data);
+
+  int RegisterClose(int fd);
 
   int UnregisterRead(int fd);
 

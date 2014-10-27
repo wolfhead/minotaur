@@ -34,4 +34,11 @@
 #define LOG_ERROR(logger,e)  LOG4CPLUS_ERROR(logger,e)
 #define LOG_FATAL(logger,e) LOG4CPLUS_FATAL(logger,e)
 
+#define MI_LOG_TRACE(logger, e) LOG_TRACE(logger, e)
+#define MI_LOG_DEBUG(logger, e) LOG_DEBUG(logger, e)
+#define MI_LOG_INFO(logger, e) LOG_INFO(logger, e)
+#define MI_LOG_WARN(logger, e) LOG_WARN(logger, e)
+#define MI_LOG_ERROR(logger, e) LOG_ERROR(logger, e)
+#define MI_LOG_FATAL(logger, e) LOG_FATAL(logger, e)
+
 #endif // _MINOTAUR_COMMON_LOGGER_H_

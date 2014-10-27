@@ -38,13 +38,15 @@ class Channel : public Socket{
  private:
   LOGGER_CLASS_DECL(logger);
 
-  void ReadBuffer(event::EventLoop* event_loop);
+  void ReadBuffer();
 
-  void WriteBuffer(event::EventLoop* event_loop);
+  void WriteBuffer();
 
   virtual void OnRead(event::EventLoop* event_loop);
 
   virtual void OnWrite(event::EventLoop* event_loop);
+
+  virtual void OnClose(event::EventLoop* event_loop);
 
   std::string ip_;
   int port_;

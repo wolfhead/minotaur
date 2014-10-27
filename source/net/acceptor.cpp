@@ -42,6 +42,13 @@ int Acceptor::Accept(const std::string& host, int port) {
     return -1;
   }
 
+  if (0 != SocketOperation::SetNonBlocking(fd)) {
+    LOG_ERROR(logger, "Acceptor::Accept SetNonBlocking, failed with:" 
+        << SystemError::FormatMessage());
+    close(fd);
+    return -1;
+  }
+
   if (0 != SocketOperation::Bind(fd, sa)) {
     LOG_ERROR(logger, "Acceptor::Accept bind, failed with:" 
         << SystemError::FormatMessage());
@@ -65,41 +72,42 @@ int Acceptor::Accept(const std::string& host, int port) {
     return -1;
   }
 
-  LOG_TRACE(logger, "Acceptor::Accept Regsitered");
+  LOG_TRACE(logger, "Acceptor::Accept Regsitered:" << *this);
 
   return 0;
 }
 
 void Acceptor::OnRead(event::EventLoop* event_loop) {
   struct sockaddr_in sa;
-  memset(&sa, 0, sizeof(sa));
-  int client_fd = SocketOperation::Accept(GetFD(), &sa);
-  if (client_fd < 0) {
-    LOG_ERROR(logger, "Acceptor::OnRead accept failed with:"
-        << SystemError::FormatMessage());  
-    return;
+
+  while (true) {
+    memset(&sa, 0, sizeof(sa));
+    int client_fd = SocketOperation::Accept(GetFD(), &sa);
+    if (client_fd < 0) {
+      if (SocketOperation::WouldBlock(SystemError::Get())) {
+        return;
+      }
+      LOG_ERROR(logger, "Acceptor::OnRead accept failed with:"
+          << SystemError::FormatMessage());  
+      return;
+    }
+
+    char client_ip_buffer[32] = {0};
+    int port = ntohs(sa.sin_port);
+    inet_ntop(AF_INET, &sa.sin_addr, client_ip_buffer, INET_ADDRSTRLEN);
+
+    Channel* channel(new Channel(GetIOService(), client_fd));
+    channel->SetIp(client_ip_buffer);
+    channel->SetPort(port);
+
+    LOG_TRACE(logger, "Acceptor::OnRead client connected on channel:"
+        << channel->GetDiagnositicInfo());
+
+    if (0 != channel->Start()) {
+      LOG_WARN(logger, "Acceptor::OnRead Channel Start fail");
+      channel->Close();
+    }
   }
-
-  char client_ip_buffer[32] = {0};
-  int port = ntohs(sa.sin_port);
-  inet_ntop(AF_INET, &sa.sin_addr, client_ip_buffer, INET_ADDRSTRLEN);
-
-  Channel* channel(new Channel(GetIOService(), client_fd));
-  channel->SetIp(client_ip_buffer);
-  channel->SetPort(port);
-   
-  LOG_TRACE(logger, "Acceptor::OnRead client connected on channel:"
-      << channel->GetDiagnositicInfo());
-
-  if (0 != channel->Start()) {
-    LOG_WARN(logger, "Acceptor::OnRead Channel Start fail");
-    //TODO
-  }
-
-  //delete channel;
-
-  // TODO create channel on it
-  // Start the channel running
 }
 
 } //namespace minotaur

@@ -91,7 +91,7 @@ int EventLoop::DeleteEvent(int fd) {
   FdEvent* fe = &data_.fd_events[fd];
   memset(fe, 0, sizeof(FdEvent));
 
-  return EventLoopImpl::RemoveEvent(&data_, fd, 0);
+  return EventLoopImpl::RemoveEvent(&data_, fd, 0xFFFFFFFF);
 }
 
 int EventLoop::ProcessEvent(uint32_t timeout) {

@@ -15,7 +15,8 @@ struct EventType {
   enum {
     EV_NONE = 0,
     EV_READ = 1,
-    EV_WRITE = 2
+    EV_WRITE = 2,
+    EV_CLOSE = 4,
   };
 };
 

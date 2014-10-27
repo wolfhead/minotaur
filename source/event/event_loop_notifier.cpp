@@ -90,7 +90,7 @@ int EventLoopNotifier::Notify(int fd, uint32_t mask, FdEventProc* proc, void* da
   // TODO this is a blocking operation
   // can we make it nonblocking
   if (SocketOperation::Send(notifier_in_, &message, sizeof(message)) != sizeof(message)) {
-    LOG_ERROR(logger, "EventLoopNotifier::Notify fail"
+    LOG_FATAL(logger, "EventLoopNotifier::Notify fail"
         << ", notify_in:" << notifier_in_
         << ", fd:" << fd
         << ", error:" << SystemError::FormatMessage());
@@ -112,6 +112,10 @@ int EventLoopNotifier::RegisterWrite(
     FdEventProc* proc, 
     void* data) {
   return Notify(fd, NotifyMessage::ADD_WRITE, proc, data); 
+}
+
+int EventLoopNotifier::RegisterClose(int fd) {
+  return Notify(fd, NotifyMessage::ADD_CLOSE, NULL, NULL);
 }
 
 int EventLoopNotifier::UnregisterRead(int fd) {
@@ -162,6 +166,8 @@ int EventLoopNotifier::NotifyEventLoop(
       return event_loop->AddEvent(message.fd, EventType::EV_READ, message.proc, message.data);
     case NotifyMessage::ADD_WRITE:
       return event_loop->AddEvent(message.fd, EventType::EV_WRITE, message.proc, message.data);
+    case NotifyMessage::ADD_CLOSE:
+      return event_loop->RemoveEvent(message.fd, 0xFFFFFFFF);
     case NotifyMessage::REMOVE_READ:
       return event_loop->RemoveEvent(message.fd, EventType::EV_READ);
     case NotifyMessage::REMOVE_WRITE:

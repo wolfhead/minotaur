@@ -18,7 +18,10 @@ class VolatileCursor;
 class CASCursor;
 class NoWaitStrategy;
 class BusyLoopStrategy;
+
+template<int RetryLoops, int NotifyCount>
 class ConditionVariableStrategy;
+
 template<typename T> class RingBuffer;
 template<
   typename T, 
@@ -57,28 +60,34 @@ class Sequencer {
     item->value = data;
     item->flag.store(BufferItem::kOccupiedItem, boost::memory_order_release);
 
-    wait_.Notify();
+    wait_.Notify(consumer_curser_.Get(), producer_seq);
 
     return true;
   }
 
   bool Pop(T* data, uint32_t milliseconds = 0) {
     uint64_t consumer_seq = consumer_curser_.Get();
-    bool loop = true;
+    uint16_t loop = 0;
     BufferItem* item;
 
     do {
+      ++loop;
       consumer_seq = consumer_curser_.Get();
       item = &ring_.At(consumer_seq + 1);
       if (item->flag.load(boost::memory_order_acquire) != BufferItem::kOccupiedItem) {
-        if (milliseconds == 0 ? wait_.Wait() : wait_.TimedWait(milliseconds)) {
+        if (milliseconds == 0 
+            ? wait_.Wait(loop) 
+            : wait_.TimedWait(loop, milliseconds)) {
           continue;
         } else {
           return false;
         }
       }
-      loop = !consumer_curser_.Set(consumer_seq, consumer_seq + 1);
-    } while (loop);
+      
+      if (consumer_curser_.Set(consumer_seq, consumer_seq + 1)) {
+         break;
+      }
+    } while (true);
 
     *data = item->value;
     item->flag.store(BufferItem::kEmptyItem, boost::memory_order_release);
@@ -118,9 +127,7 @@ class Sequencer {
   RingBuffer<BufferItem> ring_;
 
   ProducerCursor producer_curser_;
-  char padding_1[64];
   ConsumerCursor consumer_curser_;
-  char padding_2[64];
   WaitStrategy wait_;
 };
 
@@ -154,7 +161,9 @@ class MPMCQueue : public Sequencer<T, CASCursor, CASCursor, WaitStrategy> {
 
 class PlainCursor {
  public:
-  PlainCursor() :sequence_(0) {}
+  PlainCursor() :sequence_(0) {
+    padding_[0] = 0;//avoid warning
+  }
   PlainCursor(uint64_t sequence) :sequence_(sequence) {}
 
   uint64_t Get() const {return sequence_;}
@@ -168,7 +177,9 @@ class PlainCursor {
 
 class VolatileCursor {
  public:
-  VolatileCursor() :sequence_(0) {}
+  VolatileCursor() :sequence_(0) {
+    padding_[0] = 0;//avoid warning
+  }
   VolatileCursor(uint64_t sequence) :sequence_(sequence) {}
 
   uint64_t Get() const {return sequence_;}
@@ -188,7 +199,9 @@ class VolatileCursor {
 
 class CASCursor {
  public:
-  CASCursor() : sequence_(0) {}
+  CASCursor() : sequence_(0) {
+    padding_[0] = 0;//avoid warning
+  }
   CASCursor(uint64_t sequence) :sequence_(sequence) {}
 
   uint64_t Get() const {return sequence_;}
@@ -208,30 +221,37 @@ class CASCursor {
 
 class NoWaitStrategy {
  public:
-  void Notify() {}
-  bool Wait() {return false;}
-  bool TimedWait(uint32_t milliseconds) {return false;}
+  void Notify(uint64_t consume, uint64_t produce) {}
+  bool Wait(uint16_t loop) {return false;}
+  bool TimedWait(uint16_t loop, uint32_t milliseconds) {return false;}
   bool WouldBlock() const {return false;}
 };
 
 class BusyLoopStrategy {
  public:
-  void Notify() {}
-  bool Wait() {return true;}
-  bool TimedWait(uint32_t milliseconds) {return true;}
+  void Notify(uint64_t consume, uint64_t produce) {}
+  bool Wait(uint16_t loop) {return loop < 0xFFFF;}
+  bool TimedWait(uint16_t loop, uint32_t milliseconds) {return loop < 0xFFFF;}
   bool WouldBlock() const {return true;}
 };
 
+
+template<int RetryLoops = 0, int NotifyCount = 0>
 class ConditionVariableStrategy {
  public:
-  void Notify() {cond_.notify_all();}
-  bool Wait() {
+  void Notify(uint64_t consume, uint64_t produce) {
+    if (NotifyCount && consume + NotifyCount < produce) return;
+    cond_.notify_all();
+  }
+  bool Wait(uint16_t loop) {
+    if (loop < RetryLoops) return true; 
     boost::unique_lock<boost::mutex> lock(lock_);
     cond_.wait(lock);
     return true;
   }
 
-  bool TimedWait(uint32_t milliseconds) {
+  bool TimedWait(uint16_t loop, uint32_t milliseconds) {
+    if (loop < RetryLoops) return true; 
     boost::system_time timeout = 
           boost::get_system_time() + 
           boost::posix_time::milliseconds(milliseconds);  

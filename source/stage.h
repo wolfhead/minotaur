@@ -17,12 +17,12 @@ struct QueueHelper {
 
 template<typename MessageType>
 struct QueueHelper<MessageType, true> {
-  typedef typename queue::MPMCQueue<MessageType, queue::ConditionVariableStrategy> MessageQueueType;
+  typedef typename queue::MPMCQueue<MessageType, queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
 };
 
 template<typename MessageType>
 struct QueueHelper<MessageType, false> {
-  typedef typename queue::MPSCQueue<MessageType, queue::ConditionVariableStrategy> MessageQueueType;
+  typedef typename queue::MPSCQueue<MessageType, queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
 };
 
 template <typename Handler>

@@ -44,6 +44,9 @@ void FileEventProc(EventLoop *eventLoop, int fd, void *clientData, uint32_t mask
 }
 
 BOOST_AUTO_TEST_CASE(TestCompile) {
+
+  SocketOperation::IgnoreSigPipe();
+
   EventLoop el;
   int ret = 0;
 
@@ -63,6 +66,9 @@ BOOST_AUTO_TEST_CASE(TestCompile) {
 }
 
 BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
+
+  SocketOperation::IgnoreSigPipe();
+
   EventLoopStage stage(4, 65535);
   int ret = stage.Start();
   BOOST_CHECK_EQUAL(0, ret);

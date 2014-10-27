@@ -17,8 +17,8 @@ LOGGER_STATIC_DECL_IMPL(logger, "root");
 using namespace minotaur;
 using namespace minotaur::queue;
 
-#define CHECK_RESULT 1
-typedef minotaur::queue::MPMCQueue<int64_t, ConditionVariableStrategy> Sequencer;
+//#define CHECK_RESULT 1
+typedef minotaur::queue::MPMCQueue<int64_t, ConditionVariableStrategy<0, 256> > Sequencer;
 
 BOOST_AUTO_TEST_CASE(TestRingBufferGetIndex) {
   minotaur::queue::RingBuffer<int> ring(1024);
@@ -104,10 +104,19 @@ void ProducerProcLockFree(Sequencer* ring, int id, int count) {
     int64_t value = ((int64_t)id << 32) | i;
     if (!ring->Push(value)) {
       ++push_fail;
-      usleep(0);
+      //usleep(0);
     } else {
       ++i;
     }
+
+#ifdef CHECK_RESULT
+    if ((i & 0xFFFFF) == 0) {
+      LOG_TRACE(logger, "ProducerProcLockFree finish"
+          << ", push_fail:" << push_fail
+          << ", push_success:" << i);
+    }
+#endif
+
   }
   LOG_TRACE(logger, "ProducerProcLockFree finish"
       << ", push_fail:" << push_fail
@@ -119,7 +128,7 @@ void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mut
   int pop_success = 0;
   int pop_fail = 0;
   while (true) {
-    if (!ring->Pop(&value, 10)) {
+    if (!ring->Pop(&value, 1)) {
       if (!g_running) {
         break;
       } else {
@@ -133,7 +142,14 @@ void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mut
     }
 
     ++pop_success;
+
 #ifdef CHECK_RESULT
+    if ((pop_success & 0xFFFFF) == 0) {
+      LOG_TRACE(logger, "ConsumerProcLockFree finish"
+          << "pop success:" << pop_success
+          << ", pop fail:" << pop_fail);
+    }
+
     int id = value >> 32 & 0xFFFFFFFF;
     value = value & 0xFFFFFFFF;
 
@@ -154,7 +170,7 @@ void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mut
 
 BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
   static const int ring_size = 1024*1024;
-  static const int push_count = 100000000;
+  static const int push_count = 10000000;
   static const int producer_count = 2;
   static const int consumer_count = 2;
 
@@ -183,6 +199,8 @@ BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
        ++it) {
     (*it)->join();
   }
+
+  LOG_TRACE(logger, "Producer finish");
 
   g_running = false;
 

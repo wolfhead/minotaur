@@ -51,7 +51,7 @@ int Channel::Start() {
   return 0;
 }
 
-void Channel::ReadBuffer(event::EventLoop* event_loop) {
+void Channel::ReadBuffer() {
   int ret = 0;
   while (true) {
     ret = SocketOperation::Receive(GetFD(), read_buffer_.EnsureWrite(1024), 1024);
@@ -67,28 +67,37 @@ void Channel::ReadBuffer(event::EventLoop* event_loop) {
   if (ret == 0) {
     LOG_DEBUG(logger, "Channel::ReadBuffer channel closed by peer" 
         << ", channel:" << GetDiagnositicInfo());
-    Close(event_loop);
+    SocketOperation::ShutDownRead(GetFD());
   } else if (!SocketOperation::WouldBlock(SystemError::Get())) {
     LOG_DEBUG(logger, "Channel::ReadBuffer channel read fail"
         << ", error:" << SystemError::FormatMessage()
         << ", channel:" << GetDiagnositicInfo()
         << ", ret:" << ret);
-    Close(event_loop);
+    SocketOperation::ShutDownBoth(GetFD());
   }
 
   //TODO
   //Codec
   //Test as echo
+  
+  std::string line(read_buffer_.GetRead(), read_buffer_.GetReadSize());
+  LOG_TRACE(logger, "line:[" << line << "]");
+  if (line.find("quit") == 0) {
+    LOG_TRACE(logger, "Close");
+    SocketOperation::ShutDownWrite(GetFD());
+    return;
+  }
+
   memcpy(
       write_buffer_.EnsureWrite(read_buffer_.GetReadSize()),
       read_buffer_.GetRead(),
       read_buffer_.GetReadSize());
   write_buffer_.Produce(read_buffer_.GetReadSize());
   read_buffer_.Consume(read_buffer_.GetReadSize());
-  WriteBuffer(event_loop);
+  WriteBuffer();
 }
 
-void Channel::WriteBuffer(event::EventLoop* event_loop) {
+void Channel::WriteBuffer() {
   uint32_t data_size = 0;
   int ret = 0;
 
@@ -104,22 +113,25 @@ void Channel::WriteBuffer(event::EventLoop* event_loop) {
     LOG_DEBUG(logger, "Channel::WriteBuffer fail"
         << ", error:" << SystemError::FormatMessage()
         << ", channel:" << GetDiagnositicInfo());
-    Close(event_loop);
+    SocketOperation::ShutDownWrite(GetFD());
   }
 }
 
 void Channel::OnRead(event::EventLoop* event_loop) {
   //TODO
   // currently for testing
-  ReadBuffer(event_loop);
+  ReadBuffer();
 }
 
 void Channel::OnWrite(event::EventLoop* event_loop) {
   //TODO
   //currently for testing
-  WriteBuffer(event_loop);
+  WriteBuffer();
 }
 
-
+void Channel::OnClose(event::EventLoop* event_loop) {
+  Socket::OnClose(event_loop);
+  delete this; 
+}
 
 } //namespace minotaur

@@ -3,6 +3,7 @@
  * @author Wolfhead
  */
 #include "socket.h"
+#include <sys/socket.h>
 #include "../event/event_loop_data.h"
 #include "../common/system_error.h"
 #include "../io_service.h"
@@ -29,7 +30,10 @@ void Socket::SocketCommonProc(
     int fd,
     void* data,
     uint32_t mask) {
-  LOG_TRACE(logger, "SocketCommonProc called");
+  MI_LOG_TRACE(logger, "SocketCommonProc called"
+      << ", fd:" << fd
+      << ", data:" << data
+      << ", mask:" << mask);
 
   if (!data) {
     LOG_FATAL(logger, "Socket::SocketCommonProc data is NULL");
@@ -44,12 +48,19 @@ void Socket::SocketCommonProc(
     return;
   }
 
-  if (mask | event::EventType::EV_READ) {
+  if (mask & event::EventType::EV_READ) {
     sock->OnRead(event_loop);
   } 
 
-  if (mask | event::EventType::EV_WRITE) {
+  if (mask & event::EventType::EV_WRITE) {
     sock->OnWrite(event_loop);    
+  }
+
+  if (mask & event::EventType::EV_CLOSE) {
+    MI_LOG_TRACE(logger, "SocketCommonProc EV_CLOSE, " << *sock);
+    event_loop->RemoveEvent(fd, 0xFFFFFFFF);
+    sock->OnClose(event_loop); 
+    return;
   }
 }
 
@@ -73,24 +84,33 @@ void Socket::OnRead(event::EventLoop* event_loop) {
 void Socket::OnWrite(event::EventLoop* event_loop) {
 }
 
+void Socket::OnClose(event::EventLoop* event_loop) {
+  close(fd_);
+  fd_ = -1;
+}
+
 void Socket::OnProcFinish(event::EventLoop* event_loop) {
 }
 
-void Socket::Close(event::EventLoop* event_loop) {
-  if (GetFD() == -1) {
-    return;
+void Socket::Close() {
+  if (fd_) {
+    shutdown(fd_, SHUT_RDWR);
   }
+}
 
-  if (0 != event_loop->DeleteEvent(GetFD())) {
-    LOG_ERROR(logger, "Socket::Close DeleteEvent failed with:"
-        << SystemError::FormatMessage());
-  }
+void Socket::Dump(std::ostream& os) const {
+  os << "[Socket fd:" << fd_ << "]";
+}
 
-  close(GetFD());
-  fd_ = -1;
+std::string Socket::ToString() const {
+  std::ostringstream oss;
+  Dump(oss);
+  return oss.str();
+}
 
-  //TODO
-  // how do we destroy this Socket?
+std::ostream& operator << (std::ostream& os, const Socket& sock) {
+  sock.Dump(os);
+  return os;
 }
 
 } //namespace minotaur

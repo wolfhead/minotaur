@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -22,6 +23,13 @@ namespace minotaur {
 
 class SocketOperation {
  public:
+
+  inline static int IgnoreSigPipe() {
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sa.sa_flags = 0;
+    return sigaction(SIGPIPE, &sa, 0);
+  }
 
   inline static int Read(int fd, void* buffer, uint32_t size) {
     return read(fd, buffer, size); 
@@ -79,7 +87,7 @@ class SocketOperation {
     for (;;) {
       int client_fd = accept(fd, (struct sockaddr*)addr, &salen);
       if (client_fd == -1) {
-        if (SystemError::Get() == EINTR) {
+        if (SystemError::Get() == EINTR || SystemError::Get() == ECONNABORTED) {
           continue;
         }
         break;
@@ -95,6 +103,18 @@ class SocketOperation {
 
   inline static int Send(int fd, const void* buffer, uint32_t bytes) {
     return write(fd, buffer, bytes);
+  }
+
+  inline static int ShutDownRead(int fd) {
+    return shutdown(fd, SHUT_RD);
+  }
+
+  inline static int ShutDownWrite(int fd) {
+    return shutdown(fd, SHUT_WR);
+  }
+
+  inline static int ShutDownBoth(int fd) {
+    return shutdown(fd, SHUT_RDWR);
   }
 };
 

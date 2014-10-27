@@ -34,6 +34,10 @@ class EventLoopStage : public boost::noncopyable {
     return GetNotifier(fd).RegisterWrite(fd, proc, data);
   }
 
+  inline int RegisterClose(int fd) {
+    return GetNotifier(fd).RegisterClose(fd); 
+  }
+
   inline int UnregisterRead(int fd) {
     return GetNotifier(fd).UnregisterRead(fd);
   }
