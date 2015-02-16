@@ -31,8 +31,10 @@ set(MINOTAUR_SOURCE
   net/acceptor.cpp
   net/channel.cpp
   net/io_buffer.cpp
+  net/io_handler.cpp
   #event/timer/timer_wheel.cpp
   matrix/matrix_item_map.cpp
+  io_service.cpp
 )
 
 add_library(minotaur

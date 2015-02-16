@@ -68,8 +68,10 @@ int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
   if (mask & EventType::EV_READ) ee.events |= EPOLLIN;
   if (mask & EventType::EV_WRITE) ee.events |= EPOLLOUT;
 
-  //TODO
   ee.events |= EPOLLET; // expiremental
+  // EPOLLRDHUP (since Linux 2.6.17)
+  // Stream socket peer closed connection, or  shut  down  writing  half  of  connection.
+  // (This flag is especially useful for writing simple code to detect peer shutdown when using Edge Triggered monitoring.)
   ee.events |= EPOLLRDHUP;
 
   ee.data.u64 = 0; /* avoid valgrind warning */

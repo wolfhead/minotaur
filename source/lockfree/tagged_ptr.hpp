@@ -22,11 +22,13 @@ class tagged_ptr {
   static const compressed_ptr_t ptr_mask = 0xffffffffffffUL; //(1L<<48L)-1;
   static const int tag_index = 3;
 
-  tagged_ptr() : ptr_(0) {}
+  tagged_ptr() noexcept : ptr_(0) {}
 
-  tagged_ptr(const tagged_ptr& ptr) = default;
+  tagged_ptr(const tagged_ptr& ptr) noexcept = default;
 
-  tagged_ptr(compressed_ptr_t v) : ptr_(v) {}
+  tagged_ptr& operator = (const tagged_ptr& ptr) noexcept = default;
+
+  explicit tagged_ptr(compressed_ptr_t v) : ptr_(v) {}
 
   tagged_ptr(const T* p, tag_t t) : ptr_(pack_ptr(p, t)) {}
 

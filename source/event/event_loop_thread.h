@@ -53,7 +53,7 @@ class EventLoopThread : public boost::noncopyable {
 
   void Run(); 
 
-  bool running_;
+  volatile bool running_;
   uint32_t fd_size_;
   boost::thread* thread_;
   EventLoop event_loop_;

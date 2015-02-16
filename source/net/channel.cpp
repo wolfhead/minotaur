@@ -4,6 +4,7 @@
  */
 #include "channel.h"
 #include "socket_op.h"
+#include "../io_service.h"
 
 namespace minotaur {
 
@@ -131,7 +132,7 @@ void Channel::OnWrite(event::EventLoop* event_loop) {
 
 void Channel::OnClose(event::EventLoop* event_loop) {
   Socket::OnClose(event_loop);
-  delete this; 
+  GetIOService()->DestoryChannel(GetChannelId()); 
 }
 
 } //namespace minotaur

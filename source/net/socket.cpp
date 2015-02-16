@@ -36,13 +36,13 @@ void Socket::SocketCommonProc(
       << ", mask:" << mask);
 
   if (!data) {
-    LOG_FATAL(logger, "Socket::SocketCommonProc data is NULL");
+    MI_LOG_FATAL(logger, "Socket::SocketCommonProc data is NULL");
     return;
   }
 
   Socket* sock = static_cast<Socket*>(data);
   if (sock->GetFD() != fd) {
-    LOG_FATAL(logger, "Socket::SocketCommonProc fd mismatch"
+    MI_LOG_FATAL(logger, "Socket::SocketCommonProc fd mismatch"
         << ", incoming:" << fd
         << ", current:" << sock->GetFD());
     return;

@@ -4,7 +4,7 @@
  * @file stage_impl.h
  * @author Wolfhead
  */
-#include <stage.h>
+#include "stage.h"
 
 namespace minotaur {
 

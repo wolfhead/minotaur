@@ -5,16 +5,22 @@
  * @author Wolfhead
  */
 #include "event/event_loop_stage.h"
+#include "common/fixed_size_pool.h"
 
 namespace minotaur {
 
+namespace event {
+class EventLoopStage;
+} //namespace event
+
+class Channel;
+
 class IOService {
  public:
-  IOService() {
-  };
+  typedef FixedSizePool<Channel> ChannelPool;
 
-  ~IOService() {
-  };
+  IOService();
+  ~IOService();
 
   //currently hack this
   void SetEventLoopStage(event::EventLoopStage* stage) {
@@ -25,8 +31,13 @@ class IOService {
     return event_loop_stage_;
   }
 
+  Channel* CreateChannel(int fd);
+  Channel* GetChannel(uint64_t channel_id);
+  bool DestoryChannel(uint64_t channel_id);
+
  private:
   event::EventLoopStage* event_loop_stage_;
+  ChannelPool* channel_pool_;
 };
 
 } //namespace minotaur

@@ -5,7 +5,7 @@
  * @author Wolfhead
  */
 #include <boost/thread.hpp>
-#include <queue/sequencer.hpp>
+#include "queue/sequencer.hpp"
 #include "message_queue.h"
 
 namespace minotaur {
@@ -17,19 +17,25 @@ struct QueueHelper {
 
 template<typename MessageType>
 struct QueueHelper<MessageType, true> {
-  typedef typename queue::MPMCQueue<MessageType, queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
+  typedef typename queue::MPMCQueue<
+    MessageType,
+    queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
 };
 
 template<typename MessageType>
 struct QueueHelper<MessageType, false> {
-  typedef typename queue::MPSCQueue<MessageType, queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
+  typedef typename queue::MPSCQueue<
+    MessageType, 
+    queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
 };
 
 template <typename Handler>
 class StageWorker {
  public:
   typedef typename Handler::MessageType MessageType;
-  typedef typename QueueHelper<MessageType, Handler::share_queue>::MessageQueueType MessageQueueType;
+  typedef typename QueueHelper<
+    MessageType, 
+    Handler::share_queue>::MessageQueueType MessageQueueType;
 
   StageWorker(); 
 

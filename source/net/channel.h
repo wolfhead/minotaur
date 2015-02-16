@@ -27,8 +27,17 @@ class Channel : public Socket{
   inline void SetPort(int port) {
     port_ = port;
   }
+
   inline int GetPort() const {
     return port_;
+  }
+
+  inline void SetChannelId(uint64_t channel_id) {
+    channel_id_ = channel_id;
+  }
+
+  inline uint64_t GetChannelId() const {
+    return channel_id_;
   }
 
   std::string GetDiagnositicInfo() const;
@@ -52,6 +61,8 @@ class Channel : public Socket{
   int port_;
   IOBuffer read_buffer_;
   IOBuffer write_buffer_;
+
+  uint64_t channel_id_;
 };
 
 } //namespace minotaur
