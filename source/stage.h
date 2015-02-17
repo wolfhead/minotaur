@@ -65,14 +65,15 @@ class StageWorker {
   bool own_queue_;
 };
 
-template <typename Handler>
+template <typename HandlerFactory>
 class Stage {
  public:
+  typedef typename HandlerFactory::Handler Handler; 
   typedef StageWorker<Handler> StageWorkerType;
   typedef typename Handler::MessageType MessageType;
   typedef typename QueueHelper<MessageType, Handler::share_queue>::MessageQueueType MessageQueueType;
 
-  Stage(uint32_t worker_count, uint32_t queue_size);
+  Stage(HandlerFactory* factory, uint32_t worker_count, uint32_t queue_size);
 
   ~Stage();
 
@@ -92,6 +93,7 @@ class Stage {
   uint32_t worker_count_;
   uint32_t queue_size_;
 
+  HandlerFactory* factory_;
   MessageQueueType* queue_;
   Handler* handler_;
   StageWorkerType* worker_;

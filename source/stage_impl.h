@@ -79,55 +79,60 @@ void StageWorker<Handler>::Run() {
 
 ////////////////////////////////////////////////////////////////////////
 // Stage
-template <typename Handler>
-Stage<Handler>::Stage(uint32_t worker_count, uint32_t queue_size) 
-  : worker_count_(worker_count)
-  , queue_size_(queue_size) 
-  , queue_(NULL)
-  , handler_(NULL) 
-  , worker_(NULL) {
+template <typename HandlerFactory>
+Stage<HandlerFactory>::Stage(
+    HandlerFactory* factory, 
+    uint32_t worker_count, 
+    uint32_t queue_size) 
+    : worker_count_(worker_count)
+    , queue_size_(queue_size) 
+    , factory_(factory)
+    , queue_(NULL)
+    , handler_(NULL) 
+    , worker_(NULL) {
 }
 
-template <typename Handler>
-Stage<Handler>::~Stage() {
+template <typename HandlerFactory>
+Stage<HandlerFactory>::~Stage() {
+  delete factory_;
   DestroyWorker();
 }
 
-template <typename Handler>
-int Stage<Handler>::Start() {
+template <typename HandlerFactory>
+int Stage<HandlerFactory>::Start() {
   BuildWorker();
   BindQueue();
   BindHandler();
   return StartWorker();
 }
 
-template <typename Handler>
-void Stage<Handler>::Wait() {
+template <typename HandlerFactory>
+void Stage<HandlerFactory>::Wait() {
   for (size_t i = 0; i != worker_count_; ++i) {
     worker_[i].Join();
   }
 }
 
-template <typename Handler>
-void Stage<Handler>::Stop() {
+template <typename HandlerFactory>
+void Stage<HandlerFactory>::Stop() {
   for (size_t i = 0; i != worker_count_; ++i) {
     worker_[i].Stop();
   }
 }
 
-template <typename Handler>
-bool Stage<Handler>::Send(const MessageType& message) {
+template <typename HandlerFactory>
+bool Stage<HandlerFactory>::Send(const MessageType& message) {
   return worker_[Handler::HashMessage(message, worker_count_)]
     .GetMessageQueue()->Push(message);
 }
 
-template <typename Handler>
-void Stage<Handler>::BuildWorker() {
+template <typename HandlerFactory>
+void Stage<HandlerFactory>::BuildWorker() {
   worker_ = new StageWorkerType[worker_count_];    
 }
 
-template <typename Handler>
-void Stage<Handler>::BindQueue() {
+template <typename HandlerFactory>
+void Stage<HandlerFactory>::BindQueue() {
   if (Handler::share_queue) {
     queue_ = new MessageQueueType(queue_size_);
     for (size_t i = 0; i != worker_count_; ++i) {
@@ -140,24 +145,22 @@ void Stage<Handler>::BindQueue() {
   }  
 }
 
-template <typename Handler>
-void Stage<Handler>::BindHandler() {
+template <typename HandlerFactory>
+void Stage<HandlerFactory>::BindHandler() {
   if (Handler::share_handler) {
-    handler_ = new Handler;
+    handler_ = factory_->Create(this);
     for (size_t i = 0; i != worker_count_; ++i) {
       worker_[i].SetHandler(handler_, false);
-      worker_[i].GetHandler()->SetStage(this);
     }
   } else {
     for (size_t i = 0; i != worker_count_; ++i) {
-      worker_[i].SetHandler(new Handler(), true);
-      worker_[i].GetHandler()->SetStage(this);
+      worker_[i].SetHandler(factory_->Create(this), true);
     }      
   }  
 }
 
-template <typename Handler>
-int Stage<Handler>::StartWorker() {
+template <typename HandlerFactory>
+int Stage<HandlerFactory>::StartWorker() {
   for (size_t i = 0; i != worker_count_; ++i) {
     if (0 != worker_[i].Start()) {
       return -1;
@@ -166,8 +169,8 @@ int Stage<Handler>::StartWorker() {
   return 0;
 }
 
-template <typename Handler>
-void Stage<Handler>::DestroyWorker() {
+template <typename HandlerFactory>
+void Stage<HandlerFactory>::DestroyWorker() {
   if (worker_) {
     delete [] worker_;
     worker_ = NULL;

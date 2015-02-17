@@ -7,32 +7,52 @@
 
 namespace minotaur {
 
-class IOHanlder {
+class IOService;
+class IOHandler;
+
+class IOHandlerFactory {
  public:
-  typedef IOHanlder self;
-  typedef minotaur::Stage<self> StageType;
-  typedef MessageBase* MessageType;
+  typedef IOHandler Handler;
+  typedef Stage<IOHandlerFactory> StageType;
+
+  IOHandlerFactory(IOService* io_service);
+
+  IOHandler* Create(StageType* stage);
+ private:
+  IOService* io_service_;
+};
+
+
+class IOHandler {
+ public:
+  typedef IOHandler self;
+  typedef Stage<IOHandlerFactory> StageType;
+  typedef IOMessageBase* MessageType;
 
   static const bool share_handler = false;
   static const bool share_queue = false;
 
-  static uint32_t HashnMessage(const MessageBase* message, uint32_t worker_count) {
-    return message->channel_id() % worker_count; 
+  static uint32_t HashMessage(const IOMessageBase* message, uint32_t worker_count) {
+    return message->channel_id % worker_count; 
   }
 
+  IOHandler(IOService* service, StageType* stage);
+
   void SetStage(StageType* stage) {stage_ = stage;}
+
+  void Handle(IOMessageBase* message);
 
  private:
   LOGGER_CLASS_DECL(logger);
 
-  void Handle(MessageBase* message);
+  void HandleReadEvent(IOMessageBase* message);
 
-  void HandleReadEvent(MessageBase* message);
+  void HandleWriteEvent(IOMessageBase* message);
 
-  void HandleWriteEvent(MessageBase* message);
-
+  IOService* io_service_;
   StageType* stage_;
 };
+
 
 } // namespace minotaur
 

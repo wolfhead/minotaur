@@ -5,6 +5,9 @@
 #include "channel.h"
 #include "socket_op.h"
 #include "../io_service.h"
+#include "../message.h"
+#include "../stage.h"
+#include "io_handler.h"
 
 namespace minotaur {
 
@@ -119,15 +122,23 @@ void Channel::WriteBuffer() {
 }
 
 void Channel::OnRead(event::EventLoop* event_loop) {
-  //TODO
-  // currently for testing
-  ReadBuffer();
+  IOMessageBase* msg = MessageFactory::Allocate<IOMessageBase>(
+      MessageType::kReadEvent, GetChannelId());
+  if (!GetIOService()->GetIOStage()->Send(msg)) {
+    MI_LOG_ERROR(logger, "Channel::OnRead send fail");
+    MessageFactory::Destory(msg);
+  }
 }
 
 void Channel::OnWrite(event::EventLoop* event_loop) {
-  //TODO
-  //currently for testing
-  WriteBuffer();
+  IOMessageBase* msg = MessageFactory::Allocate<IOMessageBase>(
+      MessageType::kWriteEvent, GetChannelId());
+  
+
+  if (!GetIOService()->GetIOStage()->Send(msg)) {
+    MI_LOG_ERROR(logger, "Channel::OnRead send fail");
+    MessageFactory::Destory(msg);
+  }
 }
 
 void Channel::OnClose(event::EventLoop* event_loop) {

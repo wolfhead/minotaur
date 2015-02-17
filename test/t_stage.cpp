@@ -19,10 +19,14 @@ class DummyHandler {
   typedef DummyHandler self;
   typedef minotaur::Stage<self> StageType;
   typedef int MessageType;
+  typedef self Handler;
 
 
   static const bool share_handler = true;
   static const bool share_queue = true;
+
+  DummyHandler(StageType* stage) : stage_(stage) {
+  }
 
   static uint32_t HashMessage(const MessageType& message, uint32_t worker_count) {
     return 0;
@@ -35,7 +39,9 @@ class DummyHandler {
     }
   }
 
-  void SetStage(StageType* stage) {stage_ = stage;}
+  DummyHandler* Create(StageType* stage) {
+    return new DummyHandler(stage);
+  }
 
  private:
   StageType* stage_;
@@ -46,6 +52,7 @@ class LatencyHandler {
   typedef LatencyHandler self;
   typedef minotaur::Stage<self> StageType;
   typedef uint64_t MessageType;
+  typedef self Handler;
 
   static const bool share_handler = false;
   static const bool share_queue = false;
@@ -54,8 +61,9 @@ class LatencyHandler {
     return message % worker_count;
   } 
 
-  LatencyHandler() 
-      : sum_latency_(0)
+  LatencyHandler(StageType* stage) 
+      : stage_(stage)
+      , sum_latency_(0)
       , sum_count_(0) {
   }
 
@@ -81,7 +89,9 @@ class LatencyHandler {
     ++sum_count_;
   }
 
-  void SetStage(StageType* stage) {stage_ = stage;}
+  LatencyHandler* Create(StageType* stage) {
+    return new LatencyHandler(stage);
+  }
 
  private:
   StageType* stage_;
@@ -111,7 +121,7 @@ void InputLatency(Stage<LatencyHandler>* stage, uint32_t count) {
 
 
 BOOST_AUTO_TEST_CASE(testSharedStage) {
-  Stage<DummyHandler> test_stage(4, 1024 * 1024);
+  Stage<DummyHandler> test_stage(new DummyHandler(NULL), 4, 1024 * 1024);
   int ret = 0;
 
   ret = test_stage.Start();
@@ -124,7 +134,7 @@ BOOST_AUTO_TEST_CASE(testSharedStage) {
 }
 
 BOOST_AUTO_TEST_CASE(testOwnStage) {
-  Stage<LatencyHandler> test_stage(4, 1024 * 1024);
+  Stage<LatencyHandler> test_stage(new LatencyHandler(NULL), 4, 1024 * 1024);
   int ret = 0;
 
   ret = test_stage.Start();
@@ -136,6 +146,18 @@ BOOST_AUTO_TEST_CASE(testOwnStage) {
   t1.join();
 }
 
+BOOST_AUTO_TEST_CASE(testOwnStageLatency) {
+  Stage<LatencyHandler> test_stage(new LatencyHandler(NULL), 4, 1024 * 1024);
+  int ret = 0;
+
+  ret = test_stage.Start();
+  BOOST_CHECK_EQUAL(0, ret);
+
+  boost::thread t1(boost::bind(&InputLatency, &test_stage, 1000));
+
+  test_stage.Wait();
+  t1.join();
+}
 
 
 BOOST_AUTO_TEST_SUITE_END()

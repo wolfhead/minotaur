@@ -69,12 +69,15 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   SocketOperation::IgnoreSigPipe();
 
-  EventLoopStage stage(4, 65535);
-  int ret = stage.Start();
-  BOOST_CHECK_EQUAL(0, ret);
+  IOServiceConfig config;
+  config.fd_count = 65535;
+  config.event_loop_worker_ = 2;
+  config.io_worker_ = 2;
+  config.io_queue_size_ = 500000;
 
-  IOService io_service;
-  io_service.SetEventLoopStage(&stage);
+  IOService io_service(config);
+  int ret = io_service.Start();
+  BOOST_CHECK_EQUAL(ret, 0);
 
   Acceptor acceptor(&io_service);
   ret = acceptor.Accept("0.0.0.0", 4433);
@@ -82,7 +85,7 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   sleep(100);
 
-  ret = stage.Stop();
+  ret = io_service.Stop();
   BOOST_CHECK_EQUAL(0, ret);
 }
 

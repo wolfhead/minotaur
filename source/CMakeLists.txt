@@ -27,6 +27,7 @@ set(MINOTAUR_SOURCE
   event/event_loop_notifier.cpp
   event/event_loop_thread.cpp
   event/event_loop_stage.cpp
+  net/io_descriptor.cpp
   net/socket.cpp
   net/acceptor.cpp
   net/channel.cpp

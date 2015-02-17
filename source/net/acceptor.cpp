@@ -110,7 +110,7 @@ void Acceptor::OnRead(event::EventLoop* event_loop) {
 
     if (0 != channel->Start()) {
       MI_LOG_WARN(logger, "Acceptor::OnRead Channel Start fail");
-      channel->Close();
+      GetIOService()->DestoryChannel(channel->GetChannelId());
     }
   }
 }
