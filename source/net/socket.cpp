@@ -13,12 +13,12 @@ namespace minotaur {
 
 LOGGER_CLASS_IMPL_NAME(logger, Socket, "net.Socket");
 
-Socket::Socket(IOService* io_service) 
-    : IODescriptor(io_service, -1, -1) {
+Socket::Socket(IOService* io_service, bool use_io_stage) 
+    : IODescriptor(io_service, -1, -1, use_io_stage) {
 }
 
-Socket::Socket(IOService* io_service, int fd) 
-    : IODescriptor(io_service, fd, fd) {
+Socket::Socket(IOService* io_service, int fd, bool use_io_stage) 
+    : IODescriptor(io_service, fd, fd, use_io_stage) {
 }
 
 void Socket::Dump(std::ostream& os) const {

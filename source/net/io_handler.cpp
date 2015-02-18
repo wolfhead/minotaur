@@ -3,6 +3,9 @@
  * @author Wolfhead
  */
 #include "io_handler.h"
+#include "../io_service.h"
+#include "io_descriptor_factory.h"
+#include "io_descriptor.h"
 
 namespace minotaur {
 
@@ -13,25 +16,56 @@ IOHandler::IOHandler(IOService* io_service, StageType* stage)
     , stage_(stage) {
 }
 
-void IOHandler::Handle(IOMessageBase* message) {
-  switch (message->type_id) {
-    case minotaur::MessageType::kReadEvent:
-      return HandleReadEvent(message);
-    case minotaur::MessageType::kWriteEvent:
-      return HandleWriteEvent(message);
+void IOHandler::Handle(const IOMessage& message) {
+  switch (message.type_id) {
+    case minotaur::MessageType::kIOReadEvent:
+      return HandleIOReadEvent(message);
+    case minotaur::MessageType::kIOWriteEvent:
+      return HandleIOWriteEvent(message);
+    case minotaur::MessageType::kIOCloseEvent:
+      return HandleIOCloseEvent(message);
     default:
-      MI_LOG_ERROR(logger, "IOHanlder unknown message:" << message->type_id);
-      MessageFactory::Destory(message);
+      MI_LOG_ERROR(logger, "IOHanlder unknown message:" << message.type_id);
       return;
   }
 }
 
-void IOHandler::HandleReadEvent(IOMessageBase* message) {
-  MI_LOG_TRACE(logger, "HandleReadEvent");
+void IOHandler::HandleIOReadEvent(const IOMessage& message) {
+  IODescriptor* descriptor = GetIOService()->GetIODescriptorFactory()
+    ->GetIODescriptor(message.descriptor_id);
+  if (!descriptor) {
+    MI_LOG_DEBUG(logger, "HandleReadEvent descriptor not found:"
+        << message.descriptor_id);
+    return;
+  }
+
+  descriptor->OnRead();
 }
 
-void IOHandler::HandleWriteEvent(IOMessageBase* message) {
+void IOHandler::HandleIOWriteEvent(const IOMessage& message) {
   MI_LOG_TRACE(logger, "HandleWriteEvent");
+  IODescriptor* descriptor = GetIOService()->GetIODescriptorFactory()
+    ->GetIODescriptor(message.descriptor_id);
+  if (!descriptor) {
+    MI_LOG_DEBUG(logger, "HandleWriteEvent descriptor not found:"
+        << message.descriptor_id);
+    return;
+  }
+
+  descriptor->OnWrite();
+}
+
+void IOHandler::HandleIOCloseEvent(const IOMessage& message) {
+  MI_LOG_TRACE(logger, "HandleWriteEvent");
+  IODescriptor* descriptor = GetIOService()->GetIODescriptorFactory()
+    ->GetIODescriptor(message.descriptor_id);
+  if (!descriptor) {
+    MI_LOG_DEBUG(logger, "HandleIOCloseEvent descriptor not found:"
+        << message.descriptor_id);
+    return;
+  }
+
+  descriptor->OnClose();
 }
 
 IOHandlerFactory::IOHandlerFactory(IOService* io_service) 

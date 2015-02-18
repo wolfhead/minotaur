@@ -17,8 +17,7 @@ link_libraries(
 )
 
 
-#add_executable(t_tagged_ptr
-#  t_tagged_ptr.cpp)
+add_executable(t_tagged_ptr  t_tagged_ptr.cpp)
 
 add_executable(t_freelist
   t_freelist.cpp)

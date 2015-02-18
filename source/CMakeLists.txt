@@ -22,20 +22,21 @@ ENDIF()
 set(MINOTAUR_SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h
   ${MINOTAUR_EVENT_SOURCE}
+  io_service.cpp
   event/event_loop.cpp
   event/event_loop_data.cpp
   event/event_loop_notifier.cpp
   event/event_loop_thread.cpp
   event/event_loop_stage.cpp
+  net/io_descriptor_factory.cpp
   net/io_descriptor.cpp
+  net/io_buffer.cpp
+  net/io_handler.cpp
   net/socket.cpp
   net/acceptor.cpp
   net/channel.cpp
-  net/io_buffer.cpp
-  net/io_handler.cpp
   #event/timer/timer_wheel.cpp
-  matrix/matrix_item_map.cpp
-  io_service.cpp
+# matrix/matrix_item_map.cpp
 )
 
 add_library(minotaur

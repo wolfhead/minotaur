@@ -56,7 +56,6 @@ int EventLoop::AddEvent(
     return -1;
   }
 
-  fe->mask |= mask;
   fe->proc = proc;
   fe->client_data = client_data;
 

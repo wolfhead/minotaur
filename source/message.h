@@ -11,14 +11,17 @@ namespace minotaur {
 class MessageType {
  public:
   enum {
-    kReadEvent = 1,
-    kWriteEvent,
+    kUnknownEvent = 0,
+    kIOReadEvent,
+    kIOWriteEvent,
+    kIOCloseEvent,
   };
 
   static const char* ToString(int type) {
     static const char* str[] = {
-      "read event",
-      "write event",
+      "io read event",
+      "io write event",
+      "io close event",
     };
 
     if (type < 0 || type >= (int)(sizeof(str) / sizeof(const char*))) {
@@ -39,13 +42,17 @@ class MessageBase {
   uint8_t type_id;
 };
 
-class IOMessageBase : public MessageBase {
+class IOMessage : public MessageBase {
  public:
-  IOMessageBase(uint8_t type_id, uint64_t channel_id) 
-      : MessageBase(type_id), channel_id(channel_id) {
+  IOMessage() 
+      : MessageBase(MessageType::kUnknownEvent), descriptor_id(0) {
   }
 
-  uint32_t channel_id;
+  IOMessage(uint8_t type_id_, uint64_t descriptor_id_) 
+      : MessageBase(type_id_), descriptor_id(descriptor_id_) {
+  }
+
+  uint64_t descriptor_id;
 };
 
 class MessageFactory {

@@ -9,13 +9,21 @@
 
 namespace minotaur { 
 
-class Channel : public Socket{
+class Channel : public Socket {
  public:
   Channel(IOService* io_service, int fd);
 
   ~Channel();
 
-  int Start();
+  virtual int Start();
+
+  virtual int Stop();
+
+  virtual void OnRead();
+
+  virtual void OnWrite();
+
+  virtual void OnClose();
 
   inline void SetIp(const std::string& ip) {
     ip_ = ip;
@@ -32,30 +40,12 @@ class Channel : public Socket{
     return port_;
   }
 
-  inline void SetChannelId(uint64_t channel_id) {
-    channel_id_ = channel_id;
-  }
-
-  inline uint64_t GetChannelId() const {
-    return channel_id_;
-  }
-
   std::string GetDiagnositicInfo() const;
 
   void DumpDisgnosticInfo(std::ostream& os) const;
 
  private:
   LOGGER_CLASS_DECL(logger);
-
-  void ReadBuffer();
-
-  void WriteBuffer();
-
-  virtual void OnRead(event::EventLoop* event_loop);
-
-  virtual void OnWrite(event::EventLoop* event_loop);
-
-  virtual void OnClose(event::EventLoop* event_loop);
 
   std::string ip_;
   int port_;

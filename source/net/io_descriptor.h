@@ -12,11 +12,16 @@
 namespace minotaur {
 
 class IOService;
-class IOMessageBase;
+class IOMessage;
 
 class IODescriptor : public boost::noncopyable {
  public:
-  IODescriptor(IOService* io_service, int in, int out);
+  IODescriptor(
+      IOService* io_service, 
+      int in, 
+      int out, 
+      bool use_io_stage);
+
   virtual ~IODescriptor();
 
   inline IOService* GetIOService() const {
@@ -29,9 +34,26 @@ class IODescriptor : public boost::noncopyable {
 
   inline uint64_t GetDescriptorId() const {return descriptor_id_;}
 
-  inline void SetDescriptId(uint64_t id) {descriptor_id_ = id;}
+  inline void SetDescriptorId(uint64_t id) {descriptor_id_ = id;}
+
+  inline bool GetUseIOStage() const {return use_io_stage_;}
+
+  virtual int Start() = 0;
+
+  virtual int Stop() = 0;
 
   virtual void Close();
+
+  // these functions might be called in either
+  // EventLoopStage or IOStage
+  // depending on GetUseIOStage
+  virtual void OnRead();
+
+  virtual void OnWrite();
+
+  virtual void OnClose();
+
+  void Destroy();
 
   virtual void Dump(std::ostream& os) const;
 
@@ -42,15 +64,9 @@ class IODescriptor : public boost::noncopyable {
 
   int RegisterWrite(); 
 
-  int SendIOMessage(IOMessageBase* message);
+  int SendIOMessage(const IOMessage& message);
 
   bool UseIOStage() const {return use_io_stage_;}
-
-  virtual void OnRead(event::EventLoop* event_loop);
-
-  virtual void OnWrite(event::EventLoop* event_loop);
-
-  virtual void OnClose(event::EventLoop* event_loop);
 
   IOService* io_service_;
   uint64_t descriptor_id_;

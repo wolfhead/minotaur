@@ -167,7 +167,7 @@ int EventLoopNotifier::NotifyEventLoop(
     case NotifyMessage::ADD_WRITE:
       return event_loop->AddEvent(message.fd, EventType::EV_WRITE, message.proc, message.data);
     case NotifyMessage::ADD_CLOSE:
-      return event_loop->RemoveEvent(message.fd, 0xFFFFFFFF);
+      return event_loop->DeleteEvent(message.fd);
     case NotifyMessage::REMOVE_READ:
       return event_loop->RemoveEvent(message.fd, EventType::EV_READ);
     case NotifyMessage::REMOVE_WRITE:

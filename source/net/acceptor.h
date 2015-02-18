@@ -10,17 +10,28 @@ namespace minotaur {
 
 class Acceptor : public Socket {
  public:
-  Acceptor(IOService* io_service);
+  Acceptor(
+      IOService* io_service, 
+      const std::string& host,
+      int port);
 
   ~Acceptor();
 
-  int Accept(const std::string& ip, int port);
+  virtual int Start();
 
- protected:
-  virtual void OnRead(event::EventLoop* event_loop);
+  virtual int Stop();
+
+  virtual void OnRead();
+
+  inline const std::string& GetHost() const {return host_;}
+
+  inline int GetPort() const {return port_;}
 
  private:
   LOGGER_CLASS_DECL(logger);
+
+  std::string host_;
+  int port_;
 };
 
 } //namespace minotaur

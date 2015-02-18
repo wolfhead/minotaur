@@ -14,7 +14,7 @@ namespace minotaur {
 LOGGER_CLASS_IMPL_NAME(logger, Channel, "net.Channel");
 
 Channel::Channel(IOService* io_service, int fd) 
-    : Socket(io_service, fd) {
+    : Socket(io_service, fd, true) {
 }
 
 Channel::~Channel() {
@@ -55,10 +55,15 @@ int Channel::Start() {
   return 0;
 }
 
-void Channel::ReadBuffer() {
+int Channel::Stop() {
+  assert("no implement");
+  return -1;
+}
+
+void Channel::OnRead() {
   int ret = 0;
   while (true) {
-    ret = SocketOperation::Receive(GetFD(), read_buffer_.EnsureWrite(1024), 1024);
+    ret = SocketOperation::Receive(GetFD(), read_buffer_.EnsureWrite(4096), 4096);
     if (ret <= 0) {
       break;
     }
@@ -78,6 +83,11 @@ void Channel::ReadBuffer() {
         << ", channel:" << GetDiagnositicInfo()
         << ", ret:" << ret);
     SocketOperation::ShutDownBoth(GetFD());
+  } else if (SocketOperation::WouldBlock(SystemError::Get())) {
+    if (0 != RegisterRead()) {
+      MI_LOG_FATAL(logger, "Channel::ReadBuffer RegisterRead fail"
+          << ", channel:" << GetDiagnositicInfo());
+    }
   }
 
   //TODO
@@ -91,17 +101,10 @@ void Channel::ReadBuffer() {
     SocketOperation::ShutDownWrite(GetFD());
     return;
   }
-
-  memcpy(
-      write_buffer_.EnsureWrite(read_buffer_.GetReadSize()),
-      read_buffer_.GetRead(),
-      read_buffer_.GetReadSize());
-  write_buffer_.Produce(read_buffer_.GetReadSize());
-  read_buffer_.Consume(read_buffer_.GetReadSize());
-  WriteBuffer();
+  read_buffer_.Consume(line.size());
 }
 
-void Channel::WriteBuffer() {
+void Channel::OnWrite() {
   uint32_t data_size = 0;
   int ret = 0;
 
@@ -118,32 +121,16 @@ void Channel::WriteBuffer() {
         << ", error:" << SystemError::FormatMessage()
         << ", channel:" << GetDiagnositicInfo());
     SocketOperation::ShutDownWrite(GetFD());
+  } else if (SocketOperation::WouldBlock(SystemError::Get())) {
+    if (0 != RegisterWrite()) {
+      MI_LOG_FATAL(logger, "Channel::WriteBuffer RegisterWrite fail"
+          << ", channel:" << GetDiagnositicInfo());
+    }
   }
 }
 
-void Channel::OnRead(event::EventLoop* event_loop) {
-  IOMessageBase* msg = MessageFactory::Allocate<IOMessageBase>(
-      MessageType::kReadEvent, GetChannelId());
-  if (!GetIOService()->GetIOStage()->Send(msg)) {
-    MI_LOG_ERROR(logger, "Channel::OnRead send fail");
-    MessageFactory::Destory(msg);
-  }
-}
-
-void Channel::OnWrite(event::EventLoop* event_loop) {
-  IOMessageBase* msg = MessageFactory::Allocate<IOMessageBase>(
-      MessageType::kWriteEvent, GetChannelId());
-  
-
-  if (!GetIOService()->GetIOStage()->Send(msg)) {
-    MI_LOG_ERROR(logger, "Channel::OnRead send fail");
-    MessageFactory::Destory(msg);
-  }
-}
-
-void Channel::OnClose(event::EventLoop* event_loop) {
-  Socket::OnClose(event_loop);
-  GetIOService()->DestoryChannel(GetChannelId()); 
+void Channel::OnClose() {
+  Destroy();
 }
 
 } //namespace minotaur

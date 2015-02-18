@@ -6,15 +6,23 @@
 #include "../io_service.h"
 #include "../message.h"
 #include "../event/event_loop_stage.h"
+#include "../stage.h"
+#include "io_handler.h"
+#include "io_descriptor_factory.h"
 
 namespace minotaur {
 
 LOGGER_CLASS_IMPL_NAME(logger, IODescriptor, "net.IODescriptor");
 
-IODescriptor::IODescriptor(IOService* io_service, int in, int out)
+IODescriptor::IODescriptor(
+    IOService* io_service, 
+    int in, 
+    int out,
+    bool use_io_stage)
     : io_service_(io_service)
     , in_(in)
-    , out_(out) {
+    , out_(out)
+    , use_io_stage_(use_io_stage) {
 }
 
 IODescriptor::~IODescriptor() {
@@ -26,10 +34,6 @@ void IODescriptor::IODescriptorProc(
     int fd,
     void* data,
     uint32_t mask) {
-  MI_LOG_TRACE(logger, "IODescriptorProc called"
-      << ", fd:" << fd
-      << ", data:" << data
-      << ", mask:" << mask);
 
   if (!data) {
     MI_LOG_FATAL(logger, "IODescriptor::IODescriptorProc data is NULL");
@@ -44,32 +48,44 @@ void IODescriptor::IODescriptorProc(
     return;
   }
 
+  MI_LOG_TRACE(logger, "IODescriptorProc called"
+      << ", fd:" << fd
+      << ", data:" << data
+      << ", mask:" << mask
+      << ", descriptor_id" << desc->GetDescriptorId());
+
+  if (desc->GetUseIOStage()) {
+    int remove_mask = 
+      mask & (event::EventType::EV_READ | event::EventType::EV_WRITE);
+    event_loop->RemoveEvent(fd, remove_mask);
+  }
+
   if (mask & event::EventType::EV_READ) {
-    if (desc->UseIOStage()) {
-      desc->SendIOMessage(MessageFactory::Allocate<IOMessageBase>(
-          MessageType::kIOReadEvent, GetDescriptorId()));
+    if (desc->GetUseIOStage()) {
+      desc->SendIOMessage(IOMessage(
+          MessageType::kIOReadEvent, desc->GetDescriptorId()));
     } else {
-      desc->OnRead(event_loop);    
+      desc->OnRead();    
     }
   } 
 
   if (mask & event::EventType::EV_WRITE) {
-    if (desc->UseIOStage()) {
-        desc->SendIOMessage(MessageFactory::Allocate<IOMessageBase>(
-          MessageType::kIOWriteEvent, GetDescriptorId()));
+    if (desc->GetUseIOStage()) {
+        desc->SendIOMessage(IOMessage(
+          MessageType::kIOWriteEvent, desc->GetDescriptorId()));
     } else {
-      desc->OnRead(event_loop);    
+      desc->OnWrite();    
     }
   }
 
   if (mask & event::EventType::EV_CLOSE) {
     MI_LOG_TRACE(logger, "IODescriptor::IODescriptorProc EV_CLOSE, " << *desc);
-    event_loop->RemoveEvent(fd, 0xFFFFFFFF);
+    event_loop->DeleteEvent(fd);
     if (desc->UseIOStage()) {
-        desc->SendIOMessage(MessageFactory::Allocate<IOMessageBase>(
-          MessageType::kIOCloseEvent, GetDescriptorId()));
+        desc->SendIOMessage(IOMessage(
+          MessageType::kIOCloseEvent, desc->GetDescriptorId()));
     } else {
-      desc->OnRead(event_loop);    
+      desc->OnClose();
     }
     return;
   }
@@ -89,30 +105,22 @@ int IODescriptor::RegisterWrite() {
       this);
 }
 
-int IODescriptor::SendIOMessage(IOMessageBase* message) {
-      IOMessageBase* msg =
-  if (!GetIOService()->GetIOStage()->Send(msg)) {
+int IODescriptor::SendIOMessage(const IOMessage& message) {
+  if (!GetIOService()->GetIOStage()->Send(message)) {
     MI_LOG_ERROR(logger, "Channel::OnWrite send fail");
-    MessageFactory::Destory(msg);
     return -1;
   }
   return 0;
 }
 
-void IODescriptor::OnRead(event::EventLoop* event_loop) {
+void IODescriptor::OnRead() {
 }
 
-void IODescriptor::OnWrite(event::EventLoop* event_loop) {
+void IODescriptor::OnWrite() {
 }
 
-void IODescriptor::OnClose(event::EventLoop* event_loop) {
-  if (in_ == out_) {
-    close(in_);
-  } else {
-    close(out_);
-    close(in_);
-  }
-  in_ = out_ = -1;
+void IODescriptor::OnClose() {
+  Close();
 }
 
 void IODescriptor::Close() {
@@ -123,7 +131,11 @@ void IODescriptor::Close() {
     if (out_ != -1) close(out_);
   }
   in_ = out_ = -1;
-  
+}
+
+void IODescriptor::Destroy() {
+  MI_LOG_TRACE(logger, "IODescriptor::Destroy " << *this);
+  GetIOService()->GetIODescriptorFactory()->Destroy(this);
 }
 
 void IODescriptor::Dump(std::ostream& os) const {

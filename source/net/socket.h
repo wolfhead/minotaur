@@ -12,8 +12,8 @@ class IOService;
 
 class Socket : public IODescriptor {
  public:
-  Socket(IOService* io_service);
-  Socket(IOService* io_service, int fd);
+  Socket(IOService* io_service, bool use_io_stage);
+  Socket(IOService* io_service, int fd, bool use_io_stage);
 
   inline void SetFD(int fd) {
     in_ = out_ = fd;

@@ -6,25 +6,31 @@
 #include "socket_op.h"
 #include "channel.h"
 #include "../io_service.h"
+#include "io_descriptor_factory.h"
 
 namespace minotaur {
 
 LOGGER_CLASS_IMPL_NAME(logger, Acceptor, "net.Acceptor");
 
-Acceptor::Acceptor(IOService* io_service) 
-    : Socket(io_service) {
+Acceptor::Acceptor(
+    IOService* io_service,
+    const std::string& host,
+    int port) 
+    : Socket(io_service, false)
+    , host_(host)
+    , port_(port) {
 }
 
 Acceptor::~Acceptor() {
 }
 
-int Acceptor::Accept(const std::string& host, int port) {
+int Acceptor::Start() {
   struct sockaddr_in sa;
 
-  if (0 != SocketOperation::GetSocketAddress(host, port, &sa)) {
+  if (0 != SocketOperation::GetSocketAddress(GetHost(), GetPort(), &sa)) {
     MI_LOG_ERROR(logger, "Acceptor::Accept GetSocketAddress failed"
-        << ", host:" << host
-        << ", port:" << port);
+        << ", host:" << GetHost()
+        << ", port:" << GetPort());
     return -1;
   }
 
@@ -61,7 +67,7 @@ int Acceptor::Accept(const std::string& host, int port) {
         << SystemError::FormatMessage());
     close(fd);
     return -1;
-    }
+  }
 
   SetFD(fd);
 
@@ -77,7 +83,12 @@ int Acceptor::Accept(const std::string& host, int port) {
   return 0;
 }
 
-void Acceptor::OnRead(event::EventLoop* event_loop) {
+int Acceptor::Stop() {
+  assert("no implement");
+  return -1;
+}
+
+void Acceptor::OnRead() {
   struct sockaddr_in sa;
 
   while (true) {
@@ -96,21 +107,19 @@ void Acceptor::OnRead(event::EventLoop* event_loop) {
     int port = ntohs(sa.sin_port);
     inet_ntop(AF_INET, &sa.sin_addr, client_ip_buffer, INET_ADDRSTRLEN);
 
-    Channel* channel = GetIOService()->CreateChannel(client_fd);
+    Channel* channel = GetIOService()->GetIODescriptorFactory()
+        ->CreateChannel(client_fd, client_ip_buffer, port);
     if (!channel) {
       MI_LOG_ERROR(logger, "Acceptor::OnRead Create channel failed");
       continue;
     }
-
-    channel->SetIp(client_ip_buffer);
-    channel->SetPort(port);
 
     MI_LOG_TRACE(logger, "Acceptor::OnRead client connected on channel:"
         << channel->GetDiagnositicInfo());
 
     if (0 != channel->Start()) {
       MI_LOG_WARN(logger, "Acceptor::OnRead Channel Start fail");
-      GetIOService()->DestoryChannel(channel->GetChannelId());
+      channel->Destroy();
     }
   }
 }

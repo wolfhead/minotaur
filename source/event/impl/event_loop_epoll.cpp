@@ -65,23 +65,24 @@ int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
 
   ee.events = 0;
   mask |= el_data->fd_events[fd].mask; /* Merge old events */
+  mask |= EventType::EV_CLOSE;
   if (mask & EventType::EV_READ) ee.events |= EPOLLIN;
   if (mask & EventType::EV_WRITE) ee.events |= EPOLLOUT;
 
-  ee.events |= EPOLLET; // expiremental
-  // EPOLLRDHUP (since Linux 2.6.17)
-  // Stream socket peer closed connection, or  shut  down  writing  half  of  connection.
-  // (This flag is especially useful for writing simple code to detect peer shutdown when using Edge Triggered monitoring.)
+  ee.events |= EPOLLET;
   ee.events |= EPOLLRDHUP;
 
   ee.data.u64 = 0; /* avoid valgrind warning */
   ee.data.fd = fd;
 
   if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1) {
-    LOG_ERROR(logger, "EventLoopEpoll::AddEvent fail with error:" 
-        << SystemError::FormatMessage());
+    LOG_ERROR(logger, "EventLoopEpoll::AddEvent fail with"
+        << ", fd:" << fd
+        << ", error:" << SystemError::FormatMessage());
     return -1;
   }
+
+  el_data->fd_events[fd].mask = mask;
   return 0;
 }
 
@@ -97,7 +98,12 @@ int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, uint32_t del_mas
   ee.data.fd = fd;
 
   int op = el_data->fd_events[fd].mask == EventType::EV_NONE ?
-           EPOLL_CTL_MOD : EPOLL_CTL_DEL;
+           EPOLL_CTL_DEL : EPOLL_CTL_MOD;
+
+  if (op == EPOLL_CTL_MOD) {
+    ee.events |= EPOLLET;
+    ee.events |= EPOLLRDHUP;
+  }
 
   if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1) {
     LOG_ERROR(logger, "EventLoopEpoll::RemoveEvent fail with error:" 
@@ -108,7 +114,6 @@ int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, uint32_t del_mas
   }
 
   el_data->fd_events[fd].mask = mask;
-
   return 0;
 }
 
@@ -124,7 +129,7 @@ int EventLoopEpoll::Poll(EventLoopData* el_data, uint32_t timeout) {
 
       if (e->events & EPOLLIN) mask |= EventType::EV_READ;
       if (e->events & EPOLLOUT) mask |= EventType::EV_WRITE;
-      if (e->events & EPOLLERR) mask |= EventType::EV_WRITE;
+      if (e->events & EPOLLERR) mask |= EventType::EV_CLOSE;
       if (e->events & EPOLLHUP) mask |= EventType::EV_CLOSE;
       if (e->events & EPOLLRDHUP) mask |= EventType::EV_CLOSE;
 

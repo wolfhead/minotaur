@@ -15,9 +15,7 @@ class EventLoopStage;
 
 class Channel;
 class IOHandlerFactory;
-
-template<typename T>
-class FixedSizePool;
+class IODescriptorFactory;
 
 template<typename T>
 class Stage;
@@ -32,7 +30,6 @@ struct IOServiceConfig {
 
 class IOService {
  public:
-  typedef FixedSizePool<Channel> ChannelPool;
   typedef Stage<IOHandlerFactory> IOStage;
 
   IOService(const IOServiceConfig& config);
@@ -42,17 +39,17 @@ class IOService {
   int Stop();
   int Run();
 
-  event::EventLoopStage* GetEventLoopStage() const {
+  event::EventLoopStage* GetEventLoopStage() {
     return event_loop_stage_;
   }
 
-  IOStage* GetIOStage() const {
+  IOStage* GetIOStage() {
     return io_stage_;
   }
 
-  Channel* CreateChannel(int fd);
-  Channel* GetChannel(uint64_t channel_id);
-  bool DestoryChannel(uint64_t channel_id);
+  IODescriptorFactory* GetIODescriptorFactory() {
+    return io_descriptor_factory_;
+  }
 
  private:
   LOGGER_CLASS_DECL(logger);
@@ -60,7 +57,7 @@ class IOService {
   IOServiceConfig io_service_config_;
   event::EventLoopStage* event_loop_stage_;
   IOStage* io_stage_;
-  ChannelPool* channel_pool_;
+  IODescriptorFactory* io_descriptor_factory_;
 };
 
 } //namespace minotaur

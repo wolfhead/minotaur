@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <iostream>
+#include <sys/epoll.h>
 #include <boost/test/unit_test.hpp>
 #include <event/event_loop.h>
 #include <event/event_loop_stage.h>
@@ -12,6 +13,7 @@
 #include <net/acceptor.h>
 #include <common/system_error.h>
 #include <io_service.h>
+#include <net/io_descriptor_factory.h>
 #include "unittest_logger.h"
 
 using namespace minotaur;
@@ -28,18 +30,24 @@ void FileEventProc(EventLoop *eventLoop, int fd, void *clientData, uint32_t mask
   char buffer[1024] = {0};
   std::string result;
 
+  return;
+
   if (mask & EventType::EV_READ) {
-    while (1) {
-      int got = read(fd, buffer, 1024);
+    //while (1) {
+      int got = read(fd, buffer, 1);
       if (got <= 0) {
         std::cerr << SystemError::FormatMessage() << std::endl;
-        break;
+        //break;
       }
 
       result.append(buffer, got);
-    }
+    //}
     
     std::cout << result << std::endl;
+  } 
+
+  if (mask & EventType::EV_WRITE) {
+    std::cout << "EV_WRITE" << std::endl;
   }
 }
 
@@ -57,11 +65,30 @@ BOOST_AUTO_TEST_CASE(TestCompile) {
   BOOST_CHECK_EQUAL(0, ret);
 
   int i = 10;
-  ret = el.AddEvent(0, EventType::EV_READ, &FileEventProc, NULL);
-  BOOST_CHECK_EQUAL(0, ret);
+
+  int fd[2];
+  socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
+  SocketOperation::SetNonBlocking(fd[0]);
+  SocketOperation::SetNonBlocking(fd[1]);
+
+
+  struct epoll_event ee;
+  struct epoll_event events[1024];
+  int epoll_fd = epoll_create(1024);
+
+  ee.events = EPOLLIN | EPOLLET;
+  ee.data.fd = fd[0];
+  ee.data.u64 = 0;
+  epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd[0], &ee);
 
   while (i--) {
-    ret = el.ProcessEvent(1000);
+    SocketOperation::Send(fd[1], "1234567890", 10);
+    int ret = epoll_wait(epoll_fd, events, 1024, 1000);
+
+    for (int i = 0; i != ret; ++i) {
+      std::cout << "fired" << std::endl;
+    }
+
   }
 }
 
@@ -79,8 +106,9 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   int ret = io_service.Start();
   BOOST_CHECK_EQUAL(ret, 0);
 
-  Acceptor acceptor(&io_service);
-  ret = acceptor.Accept("0.0.0.0", 4433);
+  Acceptor* acceptor = io_service.GetIODescriptorFactory()
+    ->CreateAcceptor("0.0.0.0", 4433);
+  ret = acceptor->Start();
   BOOST_CHECK_EQUAL(0, ret);
 
   sleep(100);
