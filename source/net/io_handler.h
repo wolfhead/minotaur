@@ -3,7 +3,7 @@
 
 #include "../common/logger.h"
 #include "../stage.h"
-#include "../message.h"
+#include "io_message.h"
 
 namespace minotaur {
 
@@ -32,9 +32,7 @@ class IOHandler {
   static const bool share_handler = false;
   static const bool share_queue = false;
 
-  static uint32_t HashMessage(const IOMessage& message, uint32_t worker_count) {
-    return (message.descriptor_id >> 3) % worker_count; 
-  }
+  static uint32_t HashMessage(const IOMessage& message, uint32_t worker_count);
 
   IOHandler(IOService* service, StageType* stage);
 
@@ -52,6 +50,8 @@ class IOHandler {
   void HandleIOWriteEvent(const IOMessage& message);
 
   void HandleIOCloseEvent(const IOMessage& message);
+
+  void HandleIOMessageEvent(const IOMessage& message);
 
   IOService* io_service_;
   StageType* stage_;

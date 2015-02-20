@@ -47,6 +47,8 @@ class StageWorker {
   void SetQueue(MessageQueueType* queue, bool own);
   MessageQueueType* GetMessageQueue() {return queue_;}
 
+  void SetStageName(const std::string& name) {stage_name_ = name;}
+
   int Start();
   void Stop();
   void Join();
@@ -63,6 +65,8 @@ class StageWorker {
 
   MessageQueueType* queue_;
   bool own_queue_;
+
+  std::string stage_name_;
 };
 
 template <typename HandlerFactory>
@@ -73,7 +77,10 @@ class Stage {
   typedef typename Handler::MessageType MessageType;
   typedef typename QueueHelper<MessageType, Handler::share_queue>::MessageQueueType MessageQueueType;
 
-  Stage(HandlerFactory* factory, uint32_t worker_count, uint32_t queue_size);
+  Stage(
+      HandlerFactory* factory, 
+      uint32_t worker_count, 
+      uint32_t queue_size);
 
   ~Stage();
 
@@ -81,6 +88,8 @@ class Stage {
   void Wait();
   void Stop();
   bool Send(const MessageType& message);
+
+  void SetStageName(const std::string& name) {stage_name_ = name;}
 
  private:
   void BuildWorker();
@@ -97,6 +106,7 @@ class Stage {
   MessageQueueType* queue_;
   Handler* handler_;
   StageWorkerType* worker_;
+  std::string stage_name_;
 };
 
 } //namespace minotaur

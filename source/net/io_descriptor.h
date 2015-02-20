@@ -5,6 +5,7 @@
  * @author Wolfhead
  */
 
+#include <atomic>
 #include <boost/noncopyable.hpp>
 #include "../common/logger.h"
 #include "../event/event_loop.h"
@@ -38,6 +39,10 @@ class IODescriptor : public boost::noncopyable {
 
   inline bool GetUseIOStage() const {return use_io_stage_;}
 
+  inline void SetCloseMark() {close_mark_.store(true, std::memory_order_release);}
+
+  inline bool GetCloseMark() {return close_mark_.load(std::memory_order_acquire);}
+
   virtual int Start() = 0;
 
   virtual int Stop() = 0;
@@ -64,6 +69,8 @@ class IODescriptor : public boost::noncopyable {
 
   int RegisterWrite(); 
 
+  int RegisterReadWrite();
+
   int SendIOMessage(const IOMessage& message);
 
   bool UseIOStage() const {return use_io_stage_;}
@@ -73,6 +80,7 @@ class IODescriptor : public boost::noncopyable {
   int in_;
   int out_;
   bool use_io_stage_;
+  std::atomic<bool> close_mark_;
 
  private:
   static void IODescriptorProc(

@@ -12,7 +12,10 @@ namespace minotaur { namespace event {
 
 class EventLoopStage : public boost::noncopyable {
  public:
-  EventLoopStage(uint32_t thread_count, uint32_t fd_size);
+  EventLoopStage(
+      uint32_t thread_count, 
+      uint32_t fd_size);
+
   ~EventLoopStage();
 
   int Start();
@@ -27,26 +30,33 @@ class EventLoopStage : public boost::noncopyable {
   }
 
   inline int RegisterRead(int fd, FdEventProc* proc, void* data) {
-    return GetNotifier(fd).RegisterRead(fd, proc, data);
+    return GetNotifier(fd, data).RegisterRead(fd, proc, data);
   }
 
   inline int RegisterWrite(int fd, FdEventProc* proc, void* data) {
-    return GetNotifier(fd).RegisterWrite(fd, proc, data);
+    return GetNotifier(fd, data).RegisterWrite(fd, proc, data);
+  }
+
+  inline int RegisterReadWrite(int fd, FdEventProc* proc, void* data) {
+    return GetNotifier(fd, data).RegisterReadWrite(fd, proc, data);
   }
 
   inline int RegisterClose(int fd) {
-    return GetNotifier(fd).RegisterClose(fd); 
+    return GetNotifier(fd, NULL).RegisterClose(fd); 
   }
 
   inline int UnregisterRead(int fd) {
-    return GetNotifier(fd).UnregisterRead(fd);
+    return GetNotifier(fd, NULL).UnregisterRead(fd);
   }
 
   inline int UnregisterWrite(int fd) {
-    return GetNotifier(fd).UnregisterWrite(fd);
+    return GetNotifier(fd, NULL).UnregisterWrite(fd);
   }
 
-  inline EventLoopNotifier& GetNotifier(int fd) {
+  inline EventLoopNotifier& GetNotifier(int fd, void* data) {
+    if (fd == -2) {
+      fd = (uint64_t)data >> 3;
+    }
     return event_loop_thread_[fd % event_loop_thread_.size()]->GetNotifier();
   }
 

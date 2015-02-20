@@ -8,6 +8,8 @@
 #include "event_loop.h"
 #include "../common/system_error.h"
 #include "../net/socket_op.h"
+#include "../net/io_descriptor.h"
+#include "../net/io_descriptor_factory.h"
 
 namespace minotaur { namespace event {
 
@@ -21,7 +23,8 @@ void NotifyMessage::Dump(std::ostream& os) const {
      << ", \"proc\": " << proc << "}";
 }
 
-EventLoopNotifier::EventLoopNotifier(EventLoop* event_loop) 
+EventLoopNotifier::EventLoopNotifier(
+    EventLoop* event_loop) 
     : event_loop_(event_loop)
     , notifier_in_(-1)
     , notifier_out_(-1) {
@@ -84,7 +87,7 @@ int EventLoopNotifier::Notify(int fd, uint32_t mask, FdEventProc* proc, void* da
     .fd = fd,
     .mask = mask,
     .data = data,
-    .proc = proc 
+    .proc = proc,
   };
 
   // TODO this is a blocking operation
@@ -112,6 +115,13 @@ int EventLoopNotifier::RegisterWrite(
     FdEventProc* proc, 
     void* data) {
   return Notify(fd, NotifyMessage::ADD_WRITE, proc, data); 
+}
+
+int EventLoopNotifier::RegisterReadWrite(
+    int fd, 
+    FdEventProc* proc, 
+    void* data) {
+  return Notify(fd, NotifyMessage::ADD_READ_WRITE, proc, data); 
 }
 
 int EventLoopNotifier::RegisterClose(int fd) {
@@ -151,6 +161,7 @@ void EventLoopNotifier::EventLoopNotifierProc(
         return;
       }
     }
+
     NotifyEventLoop(event_loop, message);
   }
 }
@@ -161,17 +172,48 @@ int EventLoopNotifier::NotifyEventLoop(
   LOG_TRACE(logger, "EventLoopNotifier::NotifyEventLoop message:"
       << message);
 
+  IODescriptor* descriptor = NULL;
+  if (message.fd == kDescriptorFD) {
+    uint64_t descriptor_id = (uint64_t)message.data;
+    descriptor = IODescriptorFactory::Instance().
+        GetIODescriptor(descriptor_id);
+    if (!descriptor) {
+      LOG_ERROR(logger, "EventLoopNotifier::NotifyEventLoop descriptor not found:" 
+          << descriptor_id);
+      return -1;
+    }
+  }
+
+
+  //TODO
+  //fix these in out
   switch (message.mask) {
     case NotifyMessage::ADD_READ:
-      return event_loop->AddEvent(message.fd, EventType::EV_READ, message.proc, message.data);
+      return event_loop->AddEvent(
+          descriptor ? descriptor->GetIN() : message.fd, 
+          EventType::EV_READ, 
+          message.proc, 
+          message.data);
     case NotifyMessage::ADD_WRITE:
-      return event_loop->AddEvent(message.fd, EventType::EV_WRITE, message.proc, message.data);
-    case NotifyMessage::ADD_CLOSE:
-      return event_loop->DeleteEvent(message.fd);
+      return event_loop->AddEvent(
+          descriptor ? descriptor->GetOUT() : message.fd, 
+          EventType::EV_WRITE, 
+          message.proc, 
+          message.data);
+    case NotifyMessage::ADD_READ_WRITE:
+      return event_loop->AddEvent(
+          descriptor ? descriptor->GetIN() : message.fd, 
+          EventType::EV_READ | EventType::EV_WRITE, 
+          message.proc, 
+          message.data);
     case NotifyMessage::REMOVE_READ:
-      return event_loop->RemoveEvent(message.fd, EventType::EV_READ);
+      return event_loop->RemoveEvent(
+          descriptor ? descriptor->GetIN() : message.fd, 
+          EventType::EV_READ);
     case NotifyMessage::REMOVE_WRITE:
-      return event_loop->RemoveEvent(message.fd, EventType::EV_WRITE);
+      return event_loop->RemoveEvent(
+          descriptor ? descriptor->GetOUT() : message.fd, 
+          EventType::EV_WRITE);
     default:
       LOG_WARN(logger, "EventLoopNotifier::NotifyEventLoop unknown mask:" << message.mask);
       break;

@@ -6,12 +6,12 @@
 */
 
 #include <boost/thread.hpp>
+#include <mutex>
 
 namespace minotaur { namespace queue {
 
 #define LF_CAS(a_ptr, a_oldVal, a_newVal) \
 __sync_bool_compare_and_swap(a_ptr, a_oldVal, a_newVal)
-
 
 class PlainCursor;
 class VolatileCursor;
@@ -48,14 +48,21 @@ class Sequencer {
   bool Push(const T& data) {
     uint64_t producer_seq;
     BufferItem* item;
+    bool ret = false;
 
     do {
       producer_seq = producer_curser_.Get();
       item = &ring_.At(producer_seq + 1);
       if (item->flag.load(boost::memory_order_acquire) != BufferItem::kEmptyItem) {
-        return false;
+        if (producer_seq + 1 == consumer_curser_.Get() && 
+            item->flag.load(boost::memory_order_acquire) != BufferItem::kEmptyItem) {
+          return false;
+        } else {
+          continue;
+        }
       }
-    } while (!producer_curser_.Set(producer_seq, producer_seq + 1));
+      ret = producer_curser_.Set(producer_seq, producer_seq + 1);
+    } while (!ret);
 
     item->value = data;
     item->flag.store(BufferItem::kOccupiedItem, boost::memory_order_release);
@@ -105,6 +112,10 @@ class Sequencer {
     } else {
       return 0xFFFFFFFFFFFFFFFF - (consumer_index - producer_index - 1);
     }
+  }
+
+  uint64_t Capacity() const {
+    return ring_.Size();
   }
 
   bool WouldBlock() const {

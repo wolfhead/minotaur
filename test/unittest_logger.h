@@ -7,15 +7,17 @@
 #include <log4cplus/configurator.h>
 #include <log4cplus/helpers/timehelper.h>
 #include <log4cplus/consoleappender.h>
+#include <log4cplus/fileappender.h>
 #include <log4cplus/layout.h> 
 
 namespace minotaur { namespace unittest {
 
 class UnittestLogger {
  public:
-  UnittestLogger() {
+  UnittestLogger(int level = log4cplus::ALL_LOG_LEVEL) {
     log4cplus::SharedAppenderPtr appender (new log4cplus::ConsoleAppender());
-    std::string pattern = "%D{[%Y/%m/%d-%H:%M:%S]} %-5p%x - %m [%l]%n";
+    //log4cplus::SharedAppenderPtr appender (new log4cplus::FileAppender("./log.log"));
+    std::string pattern = "%D{[%Y/%m/%d-%H:%M:%S]} (%t) %-5p%x - %m [%l]%n";
 
     std::auto_ptr<log4cplus::Layout> layout(new log4cplus::PatternLayout(pattern));
     appender->setLayout(layout);
@@ -24,7 +26,7 @@ class UnittestLogger {
 
     logger.addAppender(appender);
 
-    logger.setLogLevel(log4cplus::ALL_LOG_LEVEL);  
+    logger.setLogLevel(level);  
   }
 
   UnittestLogger(const char * configFile) {

@@ -15,7 +15,6 @@ class EventLoopStage;
 
 class Channel;
 class IOHandlerFactory;
-class IODescriptorFactory;
 
 template<typename T>
 class Stage;
@@ -47,17 +46,12 @@ class IOService {
     return io_stage_;
   }
 
-  IODescriptorFactory* GetIODescriptorFactory() {
-    return io_descriptor_factory_;
-  }
-
  private:
   LOGGER_CLASS_DECL(logger);
 
   IOServiceConfig io_service_config_;
   event::EventLoopStage* event_loop_stage_;
   IOStage* io_stage_;
-  IODescriptorFactory* io_descriptor_factory_;
 };
 
 } //namespace minotaur

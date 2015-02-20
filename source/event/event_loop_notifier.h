@@ -9,13 +9,17 @@
 
 namespace minotaur { namespace event {
 
+class EventLoopNotifier;
+class EventLoop;
+
 struct NotifyMessage {
   enum {
     ADD_READ = 1,
     ADD_WRITE = 2,
-    ADD_CLOSE = 3,
-    REMOVE_READ = 4,
-    REMOVE_WRITE = 5,
+    ADD_READ_WRITE = 3,
+    ADD_CLOSE = 4,
+    REMOVE_READ = 5,
+    REMOVE_WRITE = 6,
   };
 
   int32_t       fd;
@@ -26,10 +30,12 @@ struct NotifyMessage {
   void Dump(std::ostream& os) const;
 };
 
-class EventLoop;
-
 class EventLoopNotifier {
  public:
+  enum {
+    kDescriptorFD = -2,
+  };
+
   EventLoopNotifier(EventLoop* event_loop);
   ~EventLoopNotifier();
 
@@ -40,6 +46,8 @@ class EventLoopNotifier {
   int RegisterRead(int fd, FdEventProc* proc, void* data);
 
   int RegisterWrite(int fd, FdEventProc* proc, void* data);
+
+  int RegisterReadWrite(int fd, FdEventProc* proc, void* data);
 
   int RegisterClose(int fd);
 

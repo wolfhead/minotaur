@@ -22,7 +22,8 @@ IODescriptor::IODescriptor(
     : io_service_(io_service)
     , in_(in)
     , out_(out)
-    , use_io_stage_(use_io_stage) {
+    , use_io_stage_(use_io_stage)
+    , close_mark_(false) {
 }
 
 IODescriptor::~IODescriptor() {
@@ -35,12 +36,13 @@ void IODescriptor::IODescriptorProc(
     void* data,
     uint32_t mask) {
 
-  if (!data) {
-    MI_LOG_FATAL(logger, "IODescriptor::IODescriptorProc data is NULL");
+  IODescriptor* desc = IODescriptorFactory::Instance()
+      .GetIODescriptor((uint64_t)data);
+  if (!desc) {
+    MI_LOG_WARN(logger, "IODescriptor::IODescriptorProc descriptor not found:" << (uint64_t)data << ", fd:" << fd << ", mask:" << mask);
     return;
   }
 
-  IODescriptor* desc = static_cast<IODescriptor*>(data);
   if (desc->GetIN() != fd || desc->GetOUT() != fd) {
     MI_LOG_FATAL(logger, "IODescriptor::IODescriptorProc fd mismatch"
         << ", incoming:" << fd
@@ -50,64 +52,71 @@ void IODescriptor::IODescriptorProc(
 
   MI_LOG_TRACE(logger, "IODescriptorProc called"
       << ", fd:" << fd
-      << ", data:" << data
       << ", mask:" << mask
       << ", descriptor_id" << desc->GetDescriptorId());
 
-  if (desc->GetUseIOStage()) {
-    int remove_mask = 
-      mask & (event::EventType::EV_READ | event::EventType::EV_WRITE);
-    event_loop->RemoveEvent(fd, remove_mask);
+  if (mask & event::EventType::EV_CLOSE) {
+    MI_LOG_TRACE(logger, "IODescriptor::IODescriptorProc EV_CLOSE, " 
+        << *desc);
+    event_loop->DeleteEvent(fd);
+    desc->SetCloseMark();
   }
 
-  if (mask & event::EventType::EV_READ) {
-    if (desc->GetUseIOStage()) {
-      desc->SendIOMessage(IOMessage(
-          MessageType::kIOReadEvent, desc->GetDescriptorId()));
-    } else {
+  if (desc->GetUseIOStage()) {
+    desc->SendIOMessage(IOMessage(
+        MessageType::kIOEvent, desc->GetDescriptorId(), mask));
+  } else {
+    if (mask & event::EventType::EV_READ) {
       desc->OnRead();    
-    }
-  } 
-
-  if (mask & event::EventType::EV_WRITE) {
-    if (desc->GetUseIOStage()) {
-        desc->SendIOMessage(IOMessage(
-          MessageType::kIOWriteEvent, desc->GetDescriptorId()));
-    } else {
+    } 
+    if (mask & event::EventType::EV_WRITE) {
       desc->OnWrite();    
     }
-  }
-
-  if (mask & event::EventType::EV_CLOSE) {
-    MI_LOG_TRACE(logger, "IODescriptor::IODescriptorProc EV_CLOSE, " << *desc);
-    event_loop->DeleteEvent(fd);
-    if (desc->UseIOStage()) {
-        desc->SendIOMessage(IOMessage(
-          MessageType::kIOCloseEvent, desc->GetDescriptorId()));
-    } else {
+    if (mask & event::EventType::EV_CLOSE) {
       desc->OnClose();
     }
-    return;
   }
 }
 
 int IODescriptor::RegisterRead() {
+  if (GetCloseMark()) {
+    MI_LOG_TRACE(logger, "IODescriptor::RegisterRead on close:" << *this);
+    return 0;
+  }
+
   return GetIOService()->GetEventLoopStage()->RegisterRead(
-      GetIN(), 
+      event::EventLoopNotifier::kDescriptorFD, 
       &IODescriptor::IODescriptorProc,
-      this);
+      (void*)GetDescriptorId());
 }
 
 int IODescriptor::RegisterWrite() {
+  if (GetCloseMark()) {
+    MI_LOG_TRACE(logger, "IODescriptor::RegisterWrite on close:" << *this);
+    return 0;
+  }
+
   return GetIOService()->GetEventLoopStage()->RegisterWrite(
-      GetOUT(),
+      event::EventLoopNotifier::kDescriptorFD,
       &IODescriptor::IODescriptorProc,
-      this);
+      (void*)GetDescriptorId());
+}
+
+int IODescriptor::RegisterReadWrite() {
+  if (GetCloseMark()) {
+    MI_LOG_TRACE(logger, "IODescriptor::RegisterReadWrite on close:" << *this);
+    return 0;
+  }
+
+  return GetIOService()->GetEventLoopStage()->RegisterReadWrite(
+      event::EventLoopNotifier::kDescriptorFD,
+      &IODescriptor::IODescriptorProc,
+      (void*)GetDescriptorId());
 }
 
 int IODescriptor::SendIOMessage(const IOMessage& message) {
   if (!GetIOService()->GetIOStage()->Send(message)) {
-    MI_LOG_ERROR(logger, "Channel::OnWrite send fail");
+    MI_LOG_ERROR(logger, "Channel::SendIOMessage send fail, type:" << (int)message.type_id);
     return -1;
   }
   return 0;
@@ -135,7 +144,7 @@ void IODescriptor::Close() {
 
 void IODescriptor::Destroy() {
   MI_LOG_TRACE(logger, "IODescriptor::Destroy " << *this);
-  GetIOService()->GetIODescriptorFactory()->Destroy(this);
+  IODescriptorFactory::Instance().Destroy(this);
 }
 
 void IODescriptor::Dump(std::ostream& os) const {

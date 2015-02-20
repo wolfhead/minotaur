@@ -7,6 +7,7 @@
 #include "channel.h"
 #include "../io_service.h"
 #include "io_descriptor_factory.h"
+#include "protocol/protocol.h"
 
 namespace minotaur {
 
@@ -107,12 +108,15 @@ void Acceptor::OnRead() {
     int port = ntohs(sa.sin_port);
     inet_ntop(AF_INET, &sa.sin_addr, client_ip_buffer, INET_ADDRSTRLEN);
 
-    Channel* channel = GetIOService()->GetIODescriptorFactory()
-        ->CreateChannel(client_fd, client_ip_buffer, port);
+    Channel* channel = IODescriptorFactory::Instance()
+        .CreateChannel(GetIOService(), client_fd);
     if (!channel) {
       MI_LOG_ERROR(logger, "Acceptor::OnRead Create channel failed");
       continue;
     }
+    channel->SetIp(client_ip_buffer);
+    channel->SetPort(port);
+    channel->SetProtocol(GetProtocol()->Clone());
 
     MI_LOG_TRACE(logger, "Acceptor::OnRead client connected on channel:"
         << channel->GetDiagnositicInfo());

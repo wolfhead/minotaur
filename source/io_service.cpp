@@ -7,7 +7,6 @@
 #include "event/event_loop_stage.h"
 #include "net/channel.h"
 #include "net/io_handler.h"
-#include "net/io_descriptor_factory.h"
 
 namespace minotaur {
 
@@ -23,24 +22,21 @@ IOService::IOService(const IOServiceConfig& config)
         new IOStage(
           new IOHandlerFactory(this), 
           config.io_worker_, 
-          config.io_queue_size_))
-    , io_descriptor_factory_(
-        new IODescriptorFactory(this)) {
+          config.io_queue_size_)) {
 }
 
 IOService::~IOService() {
-  delete io_descriptor_factory_;
   delete io_stage_;
   delete event_loop_stage_;
 }
 
 int IOService::Start() {
-
   if (0 != event_loop_stage_->Start()) {
     MI_LOG_ERROR(logger, "IOService::Start event_loop fail");
     return -1;
   }
 
+  io_stage_->SetStageName("io");
   if (0 != io_stage_->Start()) {
     MI_LOG_ERROR(logger, "IOService::Start io_stage fail");
     return -1;

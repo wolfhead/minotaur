@@ -10,40 +10,46 @@ namespace minotaur {
 
 LOGGER_CLASS_IMPL_NAME(logger, IODescriptorFactory, "net.IODescriptorFactory");
 
-IODescriptorFactory::IODescriptorFactory(IOService* io_service) 
-    : io_service_(io_service) 
-    , freelist_(1024, 256) {
+IODescriptorFactory::IODescriptorFactory() 
+    : freelist_(1024, 256) 
+    , protocol_factory_() {
 }
 
 Channel* IODescriptorFactory::CreateChannel(
-    int fd, 
-    const std::string& ip, 
-    int port) {
+    IOService* io_service,
+    int fd) {
   uint64_t descriptor_id = 0;
   Channel* channel = freelist_.alloc_with<Channel>(
-      io_service_, fd, &descriptor_id);
+      io_service, fd, &descriptor_id);
   if (!channel) {
     return NULL;
   }
 
   channel->SetDescriptorId(descriptor_id);
-  channel->SetIp(ip);
-  channel->SetPort(port);
-
   return channel;
 }
 
 Acceptor* IODescriptorFactory::CreateAcceptor(
+    IOService* io_service,
     const std::string& host, 
-    int port) {
+    int port,
+    int protocol_type) {
+  Protocol* protocol = protocol_factory_.Create(protocol_type);
+  if (!protocol) {
+    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateAcceptor create protocol fail:"
+        << protocol_type);
+    return NULL;
+  }
+
   uint64_t descriptor_id = 0;
   Acceptor* acceptor = freelist_.alloc_with<Acceptor>(
-      io_service_, host, port, &descriptor_id);
+      io_service, host, port, &descriptor_id);
   if (!acceptor) {
     return NULL;
   }
 
   acceptor->SetDescriptorId(descriptor_id);
+  acceptor->SetProtocol(protocol);
   return acceptor;  
 }
 

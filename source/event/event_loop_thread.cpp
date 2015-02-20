@@ -3,6 +3,7 @@
  * @author Wolfhead
  */
 #include "event_loop_thread.h"
+#include <sys/prctl.h>
 #include <boost/bind.hpp>
 #include "../common/system_error.h"
 
@@ -10,7 +11,8 @@ namespace minotaur { namespace event {
 
 LOGGER_CLASS_IMPL_NAME(logger, EventLoopThread, "event.EventLoopThread");
 
-EventLoopThread::EventLoopThread(uint32_t fd_size) 
+EventLoopThread::EventLoopThread(
+    uint32_t fd_size) 
     : running_(false)
     , fd_size_(fd_size)
     , thread_(NULL) 
@@ -58,6 +60,7 @@ int EventLoopThread::Stop() {
 
 void EventLoopThread::Run() {
   LOG_INFO(logger, "EventLoopThread::Run Start");
+  prctl(PR_SET_NAME, "event");
 
   while (running_) {
     if (event_loop_.ProcessEvent(1000) < 0) {

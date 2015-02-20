@@ -5,6 +5,7 @@
  * @author Wolfhead
  */
 #include <stdint.h>
+#include <sstream>
 
 namespace minotaur {
 
@@ -12,16 +13,19 @@ class MessageType {
  public:
   enum {
     kUnknownEvent = 0,
-    kIOReadEvent,
-    kIOWriteEvent,
-    kIOCloseEvent,
+    kIOEvent,
+    kIOMessageEvent,
+    kLineProtocolMessage,
+    kHttpProtocolMessage,
   };
 
   static const char* ToString(int type) {
     static const char* str[] = {
-      "io read event",
-      "io write event",
-      "io close event",
+      "unknown event",
+      "io event",
+      "io message event",
+      "line protocol message",
+      "Http protocol message",
     };
 
     if (type < 0 || type >= (int)(sizeof(str) / sizeof(const char*))) {
@@ -34,26 +38,29 @@ class MessageType {
 
 class MessageBase {
  public:
+  MessageBase()
+      : type_id(MessageType::kUnknownEvent) {
+  }
+
   MessageBase(uint8_t type_id) 
       : type_id(type_id) {
   }
   virtual ~MessageBase() {};
 
+  std::string ToString() const {
+    std::ostringstream oss;
+    Dump(oss);
+    return oss.str();
+  }
+
+  virtual void Dump(std::ostream& os) const {
+    os << "{\"type\": \"IOMessage\""
+       << ", \"type_id\": " << type_id << "}";
+  };
+
   uint8_t type_id;
 };
 
-class IOMessage : public MessageBase {
- public:
-  IOMessage() 
-      : MessageBase(MessageType::kUnknownEvent), descriptor_id(0) {
-  }
-
-  IOMessage(uint8_t type_id_, uint64_t descriptor_id_) 
-      : MessageBase(type_id_), descriptor_id(descriptor_id_) {
-  }
-
-  uint64_t descriptor_id;
-};
 
 class MessageFactory {
  public:
@@ -72,7 +79,7 @@ class MessageFactory {
     return new MessageType(arg1, arg2);
   }
 
-  static void Destory(MessageBase* message) {
+  static void Destroy(MessageBase* message) {
     delete message;
   }
 };

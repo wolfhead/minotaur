@@ -8,6 +8,7 @@
 #include "../message.h"
 #include "../stage.h"
 #include "io_handler.h"
+#include "protocol/protocol.h"
 
 namespace minotaur {
 
@@ -30,6 +31,7 @@ void Channel::DumpDisgnosticInfo(std::ostream& os) const {
   os << "{\"type:\": \"net.Channel\""
      << ", \"ip\": \"" << ip_ << "\""
      << ", \"port\": " << port_ 
+     << ", \"fd\": " << GetFD()
      << "}";
 }
 
@@ -40,14 +42,8 @@ int Channel::Start() {
     return -1;
   }
 
-  if (0 != RegisterRead()) {
-    LOG_WARN(logger, "Channel::Start RegisterRead fail"
-        << ", channel:" << GetDiagnositicInfo());
-    return -1;
-  }
-
-  if (0 != RegisterWrite()) {
-    LOG_WARN(logger, "Channel::Start RegisterWrite fail"
+  if (0 != RegisterReadWrite()) {
+    LOG_WARN(logger, "Channel::Start RegisterReadWrite fail"
         << ", channel:" << GetDiagnositicInfo());
     return -1;
   }
@@ -65,43 +61,23 @@ void Channel::OnRead() {
   while (true) {
     ret = SocketOperation::Receive(GetFD(), read_buffer_.EnsureWrite(4096), 4096);
     if (ret <= 0) {
+      if (ret == 0) {
+        LOG_DEBUG(logger, "Channel::ReadBuffer channel closed by peer" 
+            << ", channel:" << GetDiagnositicInfo());
+        SocketOperation::ShutDownRead(GetFD());
+      } else if (!SocketOperation::WouldBlock(SystemError::Get())) {
+        LOG_WARN(logger, "Channel::ReadBuffer channel read fail"
+            << ", error:" << SystemError::FormatMessage()
+            << ", channel:" << GetDiagnositicInfo()
+            << ", ret:" << ret);
+        SocketOperation::ShutDownBoth(GetFD());
+      } 
       break;
     }
     read_buffer_.Produce(ret);
-
-    //TODO
-    // should check buffer size
   }
 
-  if (ret == 0) {
-    LOG_DEBUG(logger, "Channel::ReadBuffer channel closed by peer" 
-        << ", channel:" << GetDiagnositicInfo());
-    SocketOperation::ShutDownRead(GetFD());
-  } else if (!SocketOperation::WouldBlock(SystemError::Get())) {
-    LOG_DEBUG(logger, "Channel::ReadBuffer channel read fail"
-        << ", error:" << SystemError::FormatMessage()
-        << ", channel:" << GetDiagnositicInfo()
-        << ", ret:" << ret);
-    SocketOperation::ShutDownBoth(GetFD());
-  } else if (SocketOperation::WouldBlock(SystemError::Get())) {
-    if (0 != RegisterRead()) {
-      MI_LOG_FATAL(logger, "Channel::ReadBuffer RegisterRead fail"
-          << ", channel:" << GetDiagnositicInfo());
-    }
-  }
-
-  //TODO
-  //Codec
-  //Test as echo
-  
-  std::string line(read_buffer_.GetRead(), read_buffer_.GetReadSize());
-  LOG_TRACE(logger, "line:[" << line << "]");
-  if (line.find("quit") == 0) {
-    LOG_TRACE(logger, "Close");
-    SocketOperation::ShutDownWrite(GetFD());
-    return;
-  }
-  read_buffer_.Consume(line.size());
+  DecodeMessage();
 }
 
 void Channel::OnWrite() {
@@ -111,22 +87,53 @@ void Channel::OnWrite() {
   while ((data_size = write_buffer_.GetReadSize()) != 0) {
     ret = SocketOperation::Send(GetFD(), write_buffer_.GetRead(), data_size);
     if (ret <= 0) {
+      if (!SocketOperation::WouldBlock(SystemError::Get())) {
+        LOG_WARN(logger, "Channel::WriteBuffer fail"
+            << ", error:" << SystemError::FormatMessage()
+            << ", channel:" << GetDiagnositicInfo());
+        SocketOperation::ShutDownWrite(GetFD());
+      } 
       break;
     }
     write_buffer_.Consume(ret);
+    //SocketOperation::ShutDownWrite(GetFD());
+  }
+}
+
+int Channel::DecodeMessage() {
+  int result = Protocol::kResultDecoed;
+  while (result == Protocol::kResultDecoed) {
+    ProtocolMessage* message = GetProtocol()->Decode(this, &read_buffer_, &result);
+
+    if (!message) {
+      continue;
+    }
+
+    message->descriptor_id = GetDescriptorId();
+    //TODO testing echo
+    SendIOMessage(
+        IOMessage(
+          MessageType::kIOMessageEvent, 
+          GetDescriptorId(),
+          (uint64_t)message));
   }
 
-  if (ret < 0 && !SocketOperation::WouldBlock(SystemError::Get())) {
-    LOG_DEBUG(logger, "Channel::WriteBuffer fail"
-        << ", error:" << SystemError::FormatMessage()
-        << ", channel:" << GetDiagnositicInfo());
-    SocketOperation::ShutDownWrite(GetFD());
-  } else if (SocketOperation::WouldBlock(SystemError::Get())) {
-    if (0 != RegisterWrite()) {
-      MI_LOG_FATAL(logger, "Channel::WriteBuffer RegisterWrite fail"
-          << ", channel:" << GetDiagnositicInfo());
-    }
+  return 0;
+}
+
+int Channel::EncodeMessage(ProtocolMessage* message) {
+  if (!message) {
+    MI_LOG_ERROR(logger, "Channel::EncodeMessage empty message");
+    return -1;    
   }
+
+  if (!GetProtocol()->Encode(this, &write_buffer_, message)) {
+    MI_LOG_ERROR(logger, "Channel::EncodeMessage fail");
+    return -1;
+  }
+
+  MessageFactory::Destroy(message);
+  return 0;
 }
 
 void Channel::OnClose() {

@@ -20,7 +20,7 @@ using namespace minotaur;
 using namespace minotaur::event;
 using namespace minotaur::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config;
+static minotaur::unittest::UnittestLogger logger_config(log4cplus::WARN_LOG_LEVEL);
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestEventLoop);
@@ -98,20 +98,22 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   IOServiceConfig config;
   config.fd_count = 65535;
-  config.event_loop_worker_ = 2;
-  config.io_worker_ = 2;
-  config.io_queue_size_ = 500000;
+  config.event_loop_worker_ = 4;
+  config.io_worker_ = 8;
+  config.io_queue_size_ = 1024 * 1024;
 
   IOService io_service(config);
   int ret = io_service.Start();
   BOOST_CHECK_EQUAL(ret, 0);
 
-  Acceptor* acceptor = io_service.GetIODescriptorFactory()
-    ->CreateAcceptor("0.0.0.0", 4433);
+  Acceptor* acceptor = IODescriptorFactory::Instance()
+    .CreateAcceptor(
+        &io_service, "0.0.0.0", 
+        4433, ProtocolType::kHttpProtocol);
   ret = acceptor->Start();
   BOOST_CHECK_EQUAL(0, ret);
 
-  sleep(100);
+  sleep(300);
 
   ret = io_service.Stop();
   BOOST_CHECK_EQUAL(0, ret);

@@ -17,6 +17,7 @@ class EventLoopEpoll {
   static int Destroy(EventLoopData* el_data);
   static int AddEvent(EventLoopData* el_data, int fd, uint32_t mask);
   static int RemoveEvent(EventLoopData* el_data, int fd, uint32_t mask);
+  static int DeleteEvent(EventLoopData* el_data, int fd);
   static int Poll(EventLoopData* el_data, uint32_t timeout);
   static const char* GetImplement();
  private:

@@ -9,6 +9,8 @@
 
 namespace minotaur { 
 
+class ProtocolMessage;
+
 class Channel : public Socket {
  public:
   Channel(IOService* io_service, int fd);
@@ -24,6 +26,10 @@ class Channel : public Socket {
   virtual void OnWrite();
 
   virtual void OnClose();
+
+  virtual int DecodeMessage();
+
+  virtual int EncodeMessage(ProtocolMessage* message);
 
   inline void SetIp(const std::string& ip) {
     ip_ = ip;
@@ -51,8 +57,6 @@ class Channel : public Socket {
   int port_;
   IOBuffer read_buffer_;
   IOBuffer write_buffer_;
-
-  uint64_t channel_id_;
 };
 
 } //namespace minotaur

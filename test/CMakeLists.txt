@@ -12,6 +12,8 @@ link_libraries(
   ${MINOTAUR_LIBRARIES}
   ${Boost_LIBRARIES}
   ${LOG4CPLUS_LIBRARIES}
+  ${TCMALLOC_LIBRARIES}
+  ${LIBUNWIND_LIBRARIES}
   pthread
   rt
 )

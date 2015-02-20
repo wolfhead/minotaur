@@ -8,7 +8,9 @@ namespace minotaur { namespace event {
 
 LOGGER_CLASS_IMPL_NAME(logger, EventLoopStage, "event.EventLoopStage");
 
-EventLoopStage::EventLoopStage(uint32_t thread_count, uint32_t fd_size) 
+EventLoopStage::EventLoopStage(
+    uint32_t thread_count, 
+    uint32_t fd_size) 
     : thread_count_(thread_count)
     , fd_size_(fd_size) {
 }

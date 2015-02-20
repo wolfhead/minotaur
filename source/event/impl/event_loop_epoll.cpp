@@ -61,7 +61,7 @@ int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
   struct epoll_event ee;
 
   int op = el_data->fd_events[fd].mask == EventType::EV_NONE ?
-           EPOLL_CTL_ADD : EPOLL_CTL_MOD;
+           EPOLL_CTL_ADD : EPOLL_CTL_ADD;
 
   ee.events = 0;
   mask |= el_data->fd_events[fd].mask; /* Merge old events */
@@ -75,9 +75,12 @@ int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
   ee.data.u64 = 0; /* avoid valgrind warning */
   ee.data.fd = fd;
 
-  if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1) {
+  if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1 
+      && SystemError::Get() != EEXIST) {
     LOG_ERROR(logger, "EventLoopEpoll::AddEvent fail with"
         << ", fd:" << fd
+        << ", epoll_fd:" << ep_data->epoll_fd
+        << ", mask:" << mask
         << ", error:" << SystemError::FormatMessage());
     return -1;
   }
@@ -98,14 +101,15 @@ int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, uint32_t del_mas
   ee.data.fd = fd;
 
   int op = el_data->fd_events[fd].mask == EventType::EV_NONE ?
-           EPOLL_CTL_DEL : EPOLL_CTL_MOD;
+           EPOLL_CTL_ADD : EPOLL_CTL_ADD;
 
-  if (op == EPOLL_CTL_MOD) {
+  if (op == EPOLL_CTL_ADD) {
     ee.events |= EPOLLET;
     ee.events |= EPOLLRDHUP;
   }
 
-  if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1) {
+  if (epoll_ctl(ep_data->epoll_fd, op, fd, &ee) == -1
+      && SystemError::Get() != EEXIST) {
     LOG_ERROR(logger, "EventLoopEpoll::RemoveEvent fail with error:" 
         << SystemError::FormatMessage()
         << ", fd:" << fd
@@ -113,7 +117,22 @@ int EventLoopEpoll::RemoveEvent(EventLoopData* el_data, int fd, uint32_t del_mas
     return -1;
   }
 
-  el_data->fd_events[fd].mask = mask;
+  return 0;
+}
+
+int EventLoopEpoll::DeleteEvent(EventLoopData* el_data, int fd) {
+  EpollData* ep_data = static_cast<EpollData*>(el_data->impl_data);
+  struct epoll_event ee;
+  el_data->fd_events[fd].mask = 0;
+
+  if (epoll_ctl(ep_data->epoll_fd, EPOLL_CTL_DEL, fd, &ee) == -1
+      && SystemError::Get() != EEXIST) {
+    LOG_ERROR(logger, "EventLoopEpoll::DeleteEvent fail with error:" 
+        << SystemError::FormatMessage()
+        << ", fd:" << fd);
+    return -1;
+  }
+
   return 0;
 }
 

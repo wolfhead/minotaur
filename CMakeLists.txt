@@ -10,6 +10,7 @@ include(${CMAKE_CONFIG_DIR}/basic.cmake)
 include(${CMAKE_CONFIG_DIR}/boost.cmake)
 include(${CMAKE_CONFIG_DIR}/log4cplus.cmake)
 include(${CMAKE_CONFIG_DIR}/minotaur.cmake)
+include(${CMAKE_CONFIG_DIR}/tcmalloc.cmake)
 
 add_subdirectory(source)
 add_subdirectory(test)

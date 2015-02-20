@@ -28,6 +28,7 @@ set(MINOTAUR_SOURCE
   event/event_loop_notifier.cpp
   event/event_loop_thread.cpp
   event/event_loop_stage.cpp
+  net/io_message.cpp
   net/io_descriptor_factory.cpp
   net/io_descriptor.cpp
   net/io_buffer.cpp
@@ -35,6 +36,11 @@ set(MINOTAUR_SOURCE
   net/socket.cpp
   net/acceptor.cpp
   net/channel.cpp
+  net/protocol/protocol_factory.cpp
+  net/protocol/line/line_protocol.cpp
+  net/protocol/http/http_parser.c
+  net/protocol/http/http_protocol.cpp
+
   #event/timer/timer_wheel.cpp
 # matrix/matrix_item_map.cpp
 )

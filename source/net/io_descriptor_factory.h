@@ -6,6 +6,7 @@
  */
 #include "../common/logger.h"
 #include "../lockfree/freelist.hpp"
+#include "protocol/protocol_factory.h"
 
 namespace minotaur {
 
@@ -16,21 +17,33 @@ class Acceptor;
 
 class IODescriptorFactory {
  public:
-  IODescriptorFactory(IOService* io_service);
+  static IODescriptorFactory& Instance() {
+    static IODescriptorFactory instance_;
+    return instance_;
+  }
 
-  Channel* CreateChannel(int fd, const std::string& ip, int port);
 
-  Acceptor* CreateAcceptor(const std::string& host, int port);
+  Channel* CreateChannel(
+      IOService* io_service, 
+      int fd);
+
+  Acceptor* CreateAcceptor(
+      IOService* io_service,
+      const std::string& host, 
+      int port, 
+      int protocol_type);
 
   IODescriptor* GetIODescriptor(uint64_t descriptor_id);
 
   bool Destroy(IODescriptor* descriptor);
 
  private:
+  IODescriptorFactory();
+
   LOGGER_CLASS_DECL(logger);
 
-  IOService* io_service_;
   lockfree::freelist<IODescriptor> freelist_;
+  ProtocolFactory protocol_factory_;
 };
 
 } //namespace minotaur

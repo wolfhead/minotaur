@@ -5,6 +5,7 @@
  * @author Wolfhead
  */
 #include "stage.h"
+#include <sys/prctl.h>
 
 namespace minotaur {
 
@@ -68,6 +69,8 @@ void StageWorker<Handler>::Join() {
 
 template <typename Handler>
 void StageWorker<Handler>::Run() {
+  prctl(PR_SET_NAME, stage_name_.c_str());
+
   MessageType message;
   while (running_) {
     if (!queue_->Pop(&message, 5)) {
@@ -89,7 +92,8 @@ Stage<HandlerFactory>::Stage(
     , factory_(factory)
     , queue_(NULL)
     , handler_(NULL) 
-    , worker_(NULL) {
+    , worker_(NULL) 
+    , stage_name_("stage") {
 }
 
 template <typename HandlerFactory>
@@ -122,8 +126,13 @@ void Stage<HandlerFactory>::Stop() {
 
 template <typename HandlerFactory>
 bool Stage<HandlerFactory>::Send(const MessageType& message) {
-  return worker_[Handler::HashMessage(message, worker_count_)]
-    .GetMessageQueue()->Push(message);
+  MessageQueueType* queue = 
+      worker_[Handler::HashMessage(message, worker_count_)].GetMessageQueue();
+  if (!queue->Push(message)) {
+    std::cout << "queue after length:" << queue->Size() << ", capacity:" << queue->Capacity() << std::endl;
+    return false;
+  }
+  return true;
 }
 
 template <typename HandlerFactory>
@@ -162,6 +171,7 @@ void Stage<HandlerFactory>::BindHandler() {
 template <typename HandlerFactory>
 int Stage<HandlerFactory>::StartWorker() {
   for (size_t i = 0; i != worker_count_; ++i) {
+    worker_[i].SetStageName(stage_name_);
     if (0 != worker_[i].Start()) {
       return -1;
     }
