@@ -151,14 +151,12 @@ bool HttpProtocol::Encode(
   static const std::string response = 
     "HTTP/1.1 200 OK\r\n"
     "Content-Length: 4\r\n"
+    //"Connection: Keep-Alive\r\n"
     "Connection: Keep-Alive\r\n"
     "\r\n"
     "pong";
 
   HttpProtocolMessage* http_message = static_cast<HttpProtocolMessage*>(message);
-  if (!http_message->keep_alive) {
-    LOG_ERROR(logger, "no keep alive");
-  }
 
   buffer->EnsureWrite(response.size());
   buffer->Write(response.data(), response.size());

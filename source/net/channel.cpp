@@ -71,7 +71,9 @@ void Channel::OnRead() {
             << ", channel:" << GetDiagnositicInfo()
             << ", ret:" << ret);
         SocketOperation::ShutDownBoth(GetFD());
-      } 
+      } else if (SocketOperation::WouldBlock(SystemError::Get())) {
+        //RegisterRead();
+      }
       break;
     }
     read_buffer_.Produce(ret);
@@ -92,11 +94,17 @@ void Channel::OnWrite() {
             << ", error:" << SystemError::FormatMessage()
             << ", channel:" << GetDiagnositicInfo());
         SocketOperation::ShutDownWrite(GetFD());
-      } 
+      } else if (SocketOperation::WouldBlock(SystemError::Get())) {
+        //RegisterWrite();
+      }
+
       break;
     }
     write_buffer_.Consume(ret);
-    //SocketOperation::ShutDownWrite(GetFD());
+
+    //if (!write_buffer_.GetReadSize()) {
+    //  SocketOperation::ShutDownWrite(GetFD());
+    //}
   }
 }
 

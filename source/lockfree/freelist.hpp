@@ -139,7 +139,7 @@ class block_allocator {
     return true;
   }
 
-  uint8_t* get_key(uint64_t key) {
+  static uint8_t* get_key(uint64_t key) {
     if (key == 0) return NULL;
     tagged_node_ptr node(key);
     if (!check_node(node)) return NULL;
@@ -147,11 +147,11 @@ class block_allocator {
   } 
 
  private:
-  uint32_t get_block_size(uint32_t block_size) {
+  static uint32_t get_block_size(uint32_t block_size) {
     return sizeof(tagged_node) + block_size;
   }
 
-  uint8_t* alloc_mem_buffer(uint32_t item_count, uint32_t item_size) {
+  static uint8_t* alloc_mem_buffer(uint32_t item_count, uint32_t item_size) {
     return new uint8_t[item_size * item_count];
   }
 
@@ -163,7 +163,7 @@ class block_allocator {
     pool_.push_back(buffer);    
   }
 
-  void destruct_mem_buffer(uint8_t* p) {
+  static void destruct_mem_buffer(uint8_t* p) {
     delete [] p;
   }
 
@@ -203,7 +203,7 @@ class block_allocator {
     } while (!head_.compare_exchange_weak(old_head, new_head));
   }
 
-  bool check_node(tagged_node_ptr node) {
+  static bool check_node(tagged_node_ptr node) {
     return node->next == node.get_raw();
   }
 
@@ -306,8 +306,8 @@ class freelist {
   }
 
   template<typename Y = T>
-  Y* get_key(uint64_t key) {
-    return (Y*)block_allocator_.get_key(key);
+  static Y* get_key(uint64_t key) {
+    return (Y*)block_allocator::get_key(key);
   }
 
  private:

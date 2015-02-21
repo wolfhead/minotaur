@@ -27,6 +27,10 @@ struct QueueHelper<MessageType, false> {
   typedef typename queue::MPSCQueue<
     MessageType, 
     queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
+
+  //typedef typename queue::MPSCQueue<
+  //  MessageType, 
+  //  queue::BusyLoopStrategy> MessageQueueType;
 };
 
 template <typename Handler>

@@ -5,6 +5,7 @@
 #include "event_loop_notifier.h"
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/eventfd.h>
 #include "event_loop.h"
 #include "../common/system_error.h"
 #include "../net/socket_op.h"
@@ -26,63 +27,46 @@ void NotifyMessage::Dump(std::ostream& os) const {
 EventLoopNotifier::EventLoopNotifier(
     EventLoop* event_loop) 
     : event_loop_(event_loop)
-    , notifier_in_(-1)
-    , notifier_out_(-1) {
+    , event_fd_(-1)
+    , queue_(1024 * 1024) {
 }
 
 EventLoopNotifier::~EventLoopNotifier() {
-  if (notifier_in_ != -1) {
-    close(notifier_in_);
-    notifier_in_ = -1;
-  }
-
-  if (notifier_out_ != -1) {
-    close(notifier_out_);
-    notifier_out_ = -1;
+  if (event_fd_ != -1) {
+    close(event_fd_);
+    event_fd_ = -1;
   }
 }
 
 int EventLoopNotifier::Init() {
-  if (notifier_in_ != -1 || notifier_out_ != -1) {
+  if (event_fd_ != -1) {
     return 0;
   }
 
-  int fd[2];
-  if (0 != socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
-    LOG_ERROR(logger, "EventLoopThread::CreateSocketPair fail with:"
+  int event_fd = -1;
+  if (-1 == (event_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK))) {
+    LOG_ERROR(logger, "EventLoopThread::CreateEventFd fail with:"
         << SystemError::FormatMessage());
     return -1;
   }
 
-  int notifier_in = fd[0];
-  int notifier_out = fd[1];
-
-  if (0 != SocketOperation::SetNonBlocking(notifier_out)) {
-    LOG_ERROR(logger, "EventLoopNotifier::Init SetNonBlocking fail with:"
-        << SystemError::FormatMessage());
-    close(notifier_in);
-    close(notifier_out);
-    return -1;
-  }
- 
   if (0 != event_loop_->AddEvent(
-        notifier_out, 
+        event_fd, 
         EventType::EV_READ, 
         &EventLoopNotifier::EventLoopNotifierProc,
-        NULL)) {
+        &queue_)) {
     LOG_ERROR(logger, "EventLoopNotifier::Init AddEvent fail");
-    close(notifier_in);
-    close(notifier_out);
+    close(event_fd);
     return -1;
   }
 
-  notifier_in_ = notifier_in;
-  notifier_out_ = notifier_out;
-
+  event_fd_ = event_fd;
   return 0;
 }
 
 int EventLoopNotifier::Notify(int fd, uint32_t mask, FdEventProc* proc, void* data) {
+  static const uint64_t add_count = 1;
+
   NotifyMessage message = {
     .fd = fd,
     .mask = mask,
@@ -90,11 +74,15 @@ int EventLoopNotifier::Notify(int fd, uint32_t mask, FdEventProc* proc, void* da
     .proc = proc,
   };
 
-  // TODO this is a blocking operation
-  // can we make it nonblocking
-  if (SocketOperation::Send(notifier_in_, &message, sizeof(message)) != sizeof(message)) {
+  if (!queue_.Push(message)) {
+    LOG_FATAL(logger, "EventLoopNotifier::Notify queue fail"
+        << ", fd:" << fd);
+    return -1;
+  }
+
+  if (SocketOperation::Send(event_fd_, &add_count, sizeof(uint64_t)) != sizeof(uint64_t)) {
     LOG_FATAL(logger, "EventLoopNotifier::Notify fail"
-        << ", notify_in:" << notifier_in_
+        << ", event_fd:" << event_fd_
         << ", fd:" << fd
         << ", error:" << SystemError::FormatMessage());
     return -1;
@@ -143,25 +131,13 @@ void EventLoopNotifier::EventLoopNotifierProc(
     uint32_t mask) {
   LOG_TRACE(logger, "EventLoopNotifier::EventLoopNotifierProc start");
 
-  NotifyMessage message;
-  uint32_t ret = 0;
-  for (;;) {
-    ret = SocketOperation::Receive(fd, &message, sizeof(message));
-    if (ret != sizeof(message)) {
-      if (ret == 0) {
-        LOG_INFO(logger, "EventLoopNotifier::EventLoopNotifierProc notifier"
-                          " socket closed:");        
-        return;
-      } else if (SocketOperation::WouldBlock(SystemError::Get())) {
-        return;
-      } else {
-        LOG_FATAL(logger, "EventLoopNotifier::EventLoopNotifierProc notifier"
-                          " socket read with error:" 
-                          << SystemError::FormatMessage());
-        return;
-      }
-    }
+  uint64_t queue_count = 0;
+  SocketOperation::Receive(fd, &queue_count, sizeof(uint64_t));
+  MessageQueueType* queue = (MessageQueueType*)data;
 
+    
+  NotifyMessage message;
+  while (queue->Pop(&message)) {
     NotifyEventLoop(event_loop, message);
   }
 }
@@ -175,8 +151,7 @@ int EventLoopNotifier::NotifyEventLoop(
   IODescriptor* descriptor = NULL;
   if (message.fd == kDescriptorFD) {
     uint64_t descriptor_id = (uint64_t)message.data;
-    descriptor = IODescriptorFactory::Instance().
-        GetIODescriptor(descriptor_id);
+    descriptor = IODescriptorFactory::GetIODescriptor(descriptor_id);
     if (!descriptor) {
       LOG_ERROR(logger, "EventLoopNotifier::NotifyEventLoop descriptor not found:" 
           << descriptor_id);

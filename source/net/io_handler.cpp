@@ -15,8 +15,8 @@ LOGGER_CLASS_IMPL_NAME(logger, IOHandler, "net.io_handler");
 uint32_t IOHandler::HashMessage(
     const IOMessage& message, 
     uint32_t worker_count) {
-  IODescriptor* descriptor = IODescriptorFactory::Instance()
-      .GetIODescriptor(message.descriptor_id);
+  IODescriptor* descriptor = 
+      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
   if (descriptor) {
     return descriptor->GetIN() % worker_count;
   } else {
@@ -58,8 +58,8 @@ void IOHandler::Handle(const IOMessage& message) {
 
 void IOHandler::HandleIOReadEvent(const IOMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOReadEvent");
-  IODescriptor* descriptor = IODescriptorFactory::Instance()
-      .GetIODescriptor(message.descriptor_id);
+  IODescriptor* descriptor = 
+      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
   if (!descriptor) {
     MI_LOG_DEBUG(logger, "HandleReadEvent descriptor not found:"
         << message.descriptor_id);
@@ -71,8 +71,8 @@ void IOHandler::HandleIOReadEvent(const IOMessage& message) {
 
 void IOHandler::HandleIOWriteEvent(const IOMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOWriteEvent");
-  IODescriptor* descriptor = IODescriptorFactory::Instance()
-      .GetIODescriptor(message.descriptor_id);
+  IODescriptor* descriptor = 
+      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
   if (!descriptor) {
     MI_LOG_DEBUG(logger, "HandleWriteEvent descriptor not found:"
         << message.descriptor_id);
@@ -84,8 +84,8 @@ void IOHandler::HandleIOWriteEvent(const IOMessage& message) {
 
 void IOHandler::HandleIOCloseEvent(const IOMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOCloseEvent");
-  IODescriptor* descriptor = IODescriptorFactory::Instance()
-      .GetIODescriptor(message.descriptor_id);
+  IODescriptor* descriptor = 
+      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
   if (!descriptor) {
     MI_LOG_DEBUG(logger, "HandleIOCloseEvent descriptor not found:"
         << message.descriptor_id);
@@ -97,8 +97,8 @@ void IOHandler::HandleIOCloseEvent(const IOMessage& message) {
 
 void IOHandler::HandleIOMessageEvent(const IOMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOMessageEvent");
-  IODescriptor* descriptor = IODescriptorFactory::Instance()
-      .GetIODescriptor(message.descriptor_id);
+  IODescriptor* descriptor = 
+      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
   if (!descriptor) {
     MI_LOG_DEBUG(logger, "HandleIOCloseEvent descriptor not found:"
         << message.descriptor_id);

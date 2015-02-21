@@ -53,10 +53,6 @@ Acceptor* IODescriptorFactory::CreateAcceptor(
   return acceptor;  
 }
 
-IODescriptor* IODescriptorFactory::GetIODescriptor(uint64_t descriptor_id) {
-  return freelist_.get_key(descriptor_id);
-}
-
 bool IODescriptorFactory::Destroy(IODescriptor* descriptor) {
   return freelist_.destroy(descriptor);
 }

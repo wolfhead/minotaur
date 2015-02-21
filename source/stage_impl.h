@@ -73,7 +73,7 @@ void StageWorker<Handler>::Run() {
 
   MessageType message;
   while (running_) {
-    if (!queue_->Pop(&message, 5)) {
+    if (!queue_->Pop(&message, 1)) {
       continue;
     }
     handler_->Handle(message);

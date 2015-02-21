@@ -39,14 +39,8 @@ void IODescriptor::IODescriptorProc(
   IODescriptor* desc = IODescriptorFactory::Instance()
       .GetIODescriptor((uint64_t)data);
   if (!desc) {
-    MI_LOG_WARN(logger, "IODescriptor::IODescriptorProc descriptor not found:" << (uint64_t)data << ", fd:" << fd << ", mask:" << mask);
-    return;
-  }
-
-  if (desc->GetIN() != fd || desc->GetOUT() != fd) {
-    MI_LOG_FATAL(logger, "IODescriptor::IODescriptorProc fd mismatch"
-        << ", incoming:" << fd
-        << ", current:" << *desc);
+    MI_LOG_WARN(logger, "IODescriptor::IODescriptorProc descriptor not found:" 
+        << (uint64_t)data << ", fd:" << fd << ", mask:" << mask);
     return;
   }
 
@@ -60,6 +54,10 @@ void IODescriptor::IODescriptorProc(
         << *desc);
     event_loop->DeleteEvent(fd);
     desc->SetCloseMark();
+  } else if (desc->GetUseIOStage()) {
+    //int remove_mask = 
+    //  mask & (event::EventType::EV_READ | event::EventType::EV_WRITE);
+    //event_loop->RemoveEvent(fd, remove_mask);
   }
 
   if (desc->GetUseIOStage()) {

@@ -33,7 +33,9 @@ class IODescriptorFactory {
       int port, 
       int protocol_type);
 
-  IODescriptor* GetIODescriptor(uint64_t descriptor_id);
+  static IODescriptor* GetIODescriptor(uint64_t descriptor_id) {
+    return lockfree::freelist<IODescriptor>::get_key(descriptor_id);
+  }
 
   bool Destroy(IODescriptor* descriptor);
 

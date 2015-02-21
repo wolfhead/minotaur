@@ -98,8 +98,8 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   IOServiceConfig config;
   config.fd_count = 65535;
-  config.event_loop_worker_ = 4;
-  config.io_worker_ = 8;
+  config.event_loop_worker_ = 1;
+  config.io_worker_ = 3;
   config.io_queue_size_ = 1024 * 1024;
 
   IOService io_service(config);

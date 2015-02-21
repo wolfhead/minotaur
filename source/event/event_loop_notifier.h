@@ -6,6 +6,8 @@
  */
 #include "event_loop_data.h"
 #include "../common/logger.h"
+#include "../queue/sequencer.hpp"
+
 
 namespace minotaur { namespace event {
 
@@ -56,6 +58,10 @@ class EventLoopNotifier {
   int UnregisterWrite(int fd);
 
  private:
+  typedef queue::MPSCQueue<
+    NotifyMessage, 
+    queue::NoWaitStrategy> MessageQueueType;
+
   LOGGER_CLASS_DECL(logger);
 
   static void EventLoopNotifierProc(
@@ -70,8 +76,8 @@ class EventLoopNotifier {
 
   EventLoop* event_loop_;
 
-  int notifier_in_;
-  int notifier_out_;
+  int event_fd_;
+  MessageQueueType queue_;
 };
 
 std::ostream& operator << (std::ostream& os, const NotifyMessage& notify_message);
