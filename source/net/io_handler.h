@@ -40,6 +40,10 @@ class IOHandler {
 
   void SetStage(StageType* stage) {stage_ = stage;}
 
+  int Start();
+
+  int Stop();
+
   void Handle(const EventMessage& message);
 
   IOService* GetIOService() {return io_service_;}

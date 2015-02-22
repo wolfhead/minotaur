@@ -46,6 +46,7 @@ set(MINOTAUR_SOURCE
   coroutine/libcoro/coro.h
   coroutine/coroutine.cpp
   coroutine/coro_factory.cpp
+  service/service_handler.cpp
 
   #event/timer/timer_wheel.cpp
 # matrix/matrix_item_map.cpp

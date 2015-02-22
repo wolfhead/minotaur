@@ -8,6 +8,7 @@
 #include "../message.h"
 #include "../stage.h"
 #include "io_handler.h"
+#include "../service/service_handler.h"
 #include "protocol/protocol.h"
 
 namespace minotaur {
@@ -118,12 +119,14 @@ int Channel::DecodeMessage() {
     }
 
     message->descriptor_id = GetDescriptorId();
-    //TODO testing echo
-    SendEventMessage(
-        EventMessage(
-          MessageType::kIOMessageEvent, 
-          GetDescriptorId(),
-          (uint64_t)message));
+
+    if (!GetIOService()->GetServiceStage()->Send(
+          EventMessage(
+            MessageType::kIOMessageEvent, 
+            GetDescriptorId(),
+            (uint64_t)message))) {
+      MI_LOG_WARN(logger, "Send message fail");
+    }
   }
 
   return 0;

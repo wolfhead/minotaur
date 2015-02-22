@@ -10,7 +10,6 @@
 
 namespace minotaur {
 
-
 template<typename MessageType, bool shared>
 struct QueueHelper {
 };
@@ -89,16 +88,16 @@ class Stage {
   ~Stage();
 
   int Start();
-  void Wait();
-  void Stop();
+  int Wait();
+  int Stop();
   bool Send(const MessageType& message);
 
   void SetStageName(const std::string& name) {stage_name_ = name;}
 
  private:
-  void BuildWorker();
-  void BindQueue();
-  void BindHandler();
+  int BuildWorker();
+  int BindQueue();
+  int BindHandler();
 
   int StartWorker();
   void DestroyWorker();

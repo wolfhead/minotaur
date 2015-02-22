@@ -44,6 +44,10 @@ class HttpProtocolMessage : public ProtocolMessage {
     kHttpTypeBoth = 2,
   };
 
+  HttpProtocolMessage() {
+    type_id = MessageType::kHttpProtocolMessage;
+  }
+
   virtual void Dump(std::ostream& os) const;
 
   unsigned short http_major;

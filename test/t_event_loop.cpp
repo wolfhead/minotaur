@@ -11,8 +11,11 @@
 #include <event/event_loop_stage.h>
 #include <net/socket_op.h>
 #include <net/acceptor.h>
+#include <net/io_handler.h>
 #include <common/system_error.h>
 #include <io_service.h>
+
+#include <service/service_handler.h>
 #include <net/io_descriptor_factory.h>
 #include "unittest_logger.h"
 
@@ -20,7 +23,7 @@ using namespace minotaur;
 using namespace minotaur::event;
 using namespace minotaur::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config(log4cplus::WARN_LOG_LEVEL);
+static minotaur::unittest::UnittestLogger logger_config(log4cplus::INFO_LOG_LEVEL);
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestEventLoop);
@@ -50,6 +53,23 @@ void FileEventProc(EventLoop *eventLoop, int fd, void *clientData, uint32_t mask
     std::cout << "EV_WRITE" << std::endl;
   }
 }
+
+class TestServiceHandler : public ServiceHandlerBase {
+ public:
+  TestServiceHandler(IOService* io_service, StageType* stage)
+      : ServiceHandlerBase(io_service, stage) {
+  }
+
+  void OnHttpProtocolMessage(
+      HttpProtocolMessage* message) {
+    GetIOService()->GetIOStage()->Send(
+        EventMessage(
+            minotaur::MessageType::kIOMessageEvent, 
+            message->descriptor_id,
+            (uint64_t)message));
+  } 
+};
+
 
 BOOST_AUTO_TEST_CASE(TestCompile) {
 
@@ -98,11 +118,17 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   IOServiceConfig config;
   config.fd_count = 65535;
-  config.event_loop_worker_ = 1;
-  config.io_worker_ = 3;
-  config.io_queue_size_ = 1024 * 1024;
+  config.event_loop_worker = 1;
+  config.io_worker = 2;
+  config.io_queue_size = 1024 * 1024;
+  config.service_worker = 1;
+  config.service_queue_size = 1024 * 1024;
+  config.service_handler_factory = 
+    new GenericServiceHandlerFactory<TestServiceHandler>();
 
   IOService io_service(config);
+  
+  io_service.HandleSignal();
   int ret = io_service.Start();
   BOOST_CHECK_EQUAL(ret, 0);
 
@@ -112,10 +138,7 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
         4433, ProtocolType::kHttpProtocol);
   ret = acceptor->Start();
   BOOST_CHECK_EQUAL(0, ret);
-
-  sleep(300);
-
-  ret = io_service.Stop();
+  ret = io_service.Run();
   BOOST_CHECK_EQUAL(0, ret);
 }
 

@@ -32,6 +32,14 @@ class DummyHandler {
     return 0;
   } 
 
+  int Start() {
+    return 0;
+  }
+
+  int Stop() {
+    return 0;
+  }
+
   void Handle(const MessageType& message) {
     if (message == 0) {
       LOG_TRACE(logger, "quit stage");
@@ -77,6 +85,13 @@ class LatencyHandler {
     }
   }
 
+  int Start() {
+    return 0;
+  }
+
+  int Stop() {
+    return 0;
+  }
 
   void Handle(const MessageType& message) {
     if (message == 0) {

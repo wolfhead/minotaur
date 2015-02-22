@@ -31,6 +31,16 @@ IOHandler::IOHandler(IOService* io_service, StageType* stage)
     , stage_(stage) {
 }
 
+int IOHandler::Start() {
+  MI_LOG_INFO(logger, "IOHandler::Start");
+  return 0;
+}
+
+int IOHandler::Stop() {
+  MI_LOG_INFO(logger, "IOHandler::Stop");
+  return 0;
+}
+
 void IOHandler::Handle(const EventMessage& message) {
   MI_LOG_TRACE(logger, "IOHandler::Handle " << message);
 

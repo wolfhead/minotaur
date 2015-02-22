@@ -104,24 +104,45 @@ Stage<HandlerFactory>::~Stage() {
 
 template <typename HandlerFactory>
 int Stage<HandlerFactory>::Start() {
-  BuildWorker();
-  BindQueue();
-  BindHandler();
-  return StartWorker();
+  if (0 != BuildWorker()) {
+    return -1;
+  }
+
+  if (0 != BindQueue()) {
+    return -1;
+  }
+
+  if (0 != BindHandler()) {
+    return -1;
+  }
+
+  if (0 != StartWorker()) {
+    return -1;
+  }
+  return 0;
 }
 
 template <typename HandlerFactory>
-void Stage<HandlerFactory>::Wait() {
+int Stage<HandlerFactory>::Wait() {
   for (size_t i = 0; i != worker_count_; ++i) {
     worker_[i].Join();
+    if (Handler::share_handler) {
+      worker_[i].GetHandler()->Stop();
+    }
   }
+
+  if (handler_) {
+    handler_->Stop();
+  }
+  return 0;
 }
 
 template <typename HandlerFactory>
-void Stage<HandlerFactory>::Stop() {
+int Stage<HandlerFactory>::Stop() {
   for (size_t i = 0; i != worker_count_; ++i) {
     worker_[i].Stop();
   }
+  return 0;
 }
 
 template <typename HandlerFactory>
@@ -136,12 +157,13 @@ bool Stage<HandlerFactory>::Send(const MessageType& message) {
 }
 
 template <typename HandlerFactory>
-void Stage<HandlerFactory>::BuildWorker() {
+int Stage<HandlerFactory>::BuildWorker() {
   worker_ = new StageWorkerType[worker_count_];    
+  return 0;
 }
 
 template <typename HandlerFactory>
-void Stage<HandlerFactory>::BindQueue() {
+int Stage<HandlerFactory>::BindQueue() {
   if (Handler::share_queue) {
     queue_ = new MessageQueueType(queue_size_);
     for (size_t i = 0; i != worker_count_; ++i) {
@@ -152,20 +174,30 @@ void Stage<HandlerFactory>::BindQueue() {
       worker_[i].SetQueue(new MessageQueueType(queue_size_), true);
     }      
   }  
+  return 0;
 }
 
 template <typename HandlerFactory>
-void Stage<HandlerFactory>::BindHandler() {
+int Stage<HandlerFactory>::BindHandler() {
   if (Handler::share_handler) {
     handler_ = factory_->Create(this);
+    if (0 != handler_->Start()) {
+      return -1;
+    }
     for (size_t i = 0; i != worker_count_; ++i) {
       worker_[i].SetHandler(handler_, false);
     }
   } else {
     for (size_t i = 0; i != worker_count_; ++i) {
-      worker_[i].SetHandler(factory_->Create(this), true);
+      Handler* handler = factory_->Create(this);
+      if (0 != handler->Start()) {
+        delete handler;
+        return -1;
+      }
+      worker_[i].SetHandler(handler, true);
     }      
-  }  
+  }
+  return 0;
 }
 
 template <typename HandlerFactory>
