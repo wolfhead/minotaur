@@ -4,6 +4,7 @@
   @file freelist.hpp
   @author Wolfhead
 */
+#include <assert.h>
 #include <algorithm>
 #include <atomic>
 #include <mutex>
@@ -255,7 +256,7 @@ class freelist {
   }
 
   template<typename Y>
-  Y* alloc(uint64_t* key) {
+  Y* alloc_with(uint64_t* key) {
     assert(sizeof(Y) <= block_allocator_.block_size());
     *key = block_allocator_.alloc_key();
     uint8_t* p = block_allocator_.get_key(*key);

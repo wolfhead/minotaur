@@ -61,7 +61,7 @@ void IODescriptor::IODescriptorProc(
   }
 
   if (desc->GetUseIOStage()) {
-    desc->SendIOMessage(IOMessage(
+    desc->SendEventMessage(EventMessage(
         MessageType::kIOEvent, desc->GetDescriptorId(), mask));
   } else {
     if (mask & event::EventType::EV_READ) {
@@ -112,9 +112,10 @@ int IODescriptor::RegisterReadWrite() {
       (void*)GetDescriptorId());
 }
 
-int IODescriptor::SendIOMessage(const IOMessage& message) {
+int IODescriptor::SendEventMessage(const EventMessage& message) {
   if (!GetIOService()->GetIOStage()->Send(message)) {
-    MI_LOG_ERROR(logger, "Channel::SendIOMessage send fail, type:" << (int)message.type_id);
+    MI_LOG_ERROR(logger, "Channel::SendEventMessage send fail, type:" 
+        << (int)message.type_id);
     return -1;
   }
   return 0;

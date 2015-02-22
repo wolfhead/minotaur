@@ -13,7 +13,7 @@
 namespace minotaur {
 
 class IOService;
-class IOMessage;
+class EventMessage;
 
 class IODescriptor : public boost::noncopyable {
  public:
@@ -71,7 +71,7 @@ class IODescriptor : public boost::noncopyable {
 
   int RegisterReadWrite();
 
-  int SendIOMessage(const IOMessage& message);
+  int SendEventMessage(const EventMessage& message);
 
   bool UseIOStage() const {return use_io_stage_;}
 

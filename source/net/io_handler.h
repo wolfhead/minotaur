@@ -27,31 +27,33 @@ class IOHandler {
  public:
   typedef IOHandler self;
   typedef Stage<IOHandlerFactory> StageType;
-  typedef IOMessage MessageType;
+  typedef EventMessage MessageType;
 
   static const bool share_handler = false;
   static const bool share_queue = false;
 
-  static uint32_t HashMessage(const IOMessage& message, uint32_t worker_count);
+  static uint32_t HashMessage(
+      const EventMessage& message, 
+      uint32_t worker_count);
 
   IOHandler(IOService* service, StageType* stage);
 
   void SetStage(StageType* stage) {stage_ = stage;}
 
-  void Handle(const IOMessage& message);
+  void Handle(const EventMessage& message);
 
   IOService* GetIOService() {return io_service_;}
 
  private:
   LOGGER_CLASS_DECL(logger);
 
-  void HandleIOReadEvent(const IOMessage& message);
+  void HandleIOReadEvent(const EventMessage& message);
 
-  void HandleIOWriteEvent(const IOMessage& message);
+  void HandleIOWriteEvent(const EventMessage& message);
 
-  void HandleIOCloseEvent(const IOMessage& message);
+  void HandleIOCloseEvent(const EventMessage& message);
 
-  void HandleIOMessageEvent(const IOMessage& message);
+  void HandleIOMessageEvent(const EventMessage& message);
 
   IOService* io_service_;
   StageType* stage_;

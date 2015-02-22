@@ -10,32 +10,6 @@
 
 namespace minotaur {
 
-class ProtocolMessage;
-
-class IOMessage : public MessageBase {
- public:
-  IOMessage() 
-      : MessageBase(MessageType::kUnknownEvent), descriptor_id(0) {
-  }
-
-  IOMessage(uint8_t type_id_, uint64_t descriptor_id_, uint64_t payload_ = 0) 
-      : MessageBase(type_id_), descriptor_id(descriptor_id_), payload(payload_) {
-  }
-
-  void Destroy() const;
-  virtual void Dump(std::ostream& os) const;
-
-  uint64_t descriptor_id;
-  uint64_t payload;
-
-  ProtocolMessage* GetProtocolMessage() const {
-    if (type_id == MessageType::kIOMessageEvent && payload) {
-      return (ProtocolMessage*)payload;
-    }
-    return NULL;
-  }
-};
-
 class ProtocolMessage : public MessageBase {
  public:
 
@@ -84,7 +58,6 @@ class HttpProtocolMessage : public ProtocolMessage {
   std::string body;
 };
 
-std::ostream& operator << (std::ostream& os, const IOMessage& message);
 std::ostream& operator << (std::ostream& os, const ProtocolMessage& message);
 std::ostream& operator << (std::ostream& os, const LineProtocolMessage& message);
 std::ostream& operator << (std::ostream& os, const HttpProtocolMessage& message);

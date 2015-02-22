@@ -119,8 +119,8 @@ int Channel::DecodeMessage() {
 
     message->descriptor_id = GetDescriptorId();
     //TODO testing echo
-    SendIOMessage(
-        IOMessage(
+    SendEventMessage(
+        EventMessage(
           MessageType::kIOMessageEvent, 
           GetDescriptorId(),
           (uint64_t)message));

@@ -45,6 +45,9 @@ add_executable(t_message_queue
 add_executable(t_stage
   t_stage.cpp)
 
+add_executable(t_coroutine
+  t_coroutine.cpp)
+
 #add_executable(t_lf_static_list_pool
 #  t_lf_static_list_pool.cpp)
 

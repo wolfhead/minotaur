@@ -13,7 +13,7 @@ namespace minotaur {
 LOGGER_CLASS_IMPL_NAME(logger, IOHandler, "net.io_handler");
 
 uint32_t IOHandler::HashMessage(
-    const IOMessage& message, 
+    const EventMessage& message, 
     uint32_t worker_count) {
   IODescriptor* descriptor = 
       IODescriptorFactory::GetIODescriptor(message.descriptor_id);
@@ -31,7 +31,7 @@ IOHandler::IOHandler(IOService* io_service, StageType* stage)
     , stage_(stage) {
 }
 
-void IOHandler::Handle(const IOMessage& message) {
+void IOHandler::Handle(const EventMessage& message) {
   MI_LOG_TRACE(logger, "IOHandler::Handle " << message);
 
   switch (message.type_id) {
@@ -56,7 +56,7 @@ void IOHandler::Handle(const IOMessage& message) {
   }
 }
 
-void IOHandler::HandleIOReadEvent(const IOMessage& message) {
+void IOHandler::HandleIOReadEvent(const EventMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOReadEvent");
   IODescriptor* descriptor = 
       IODescriptorFactory::GetIODescriptor(message.descriptor_id);
@@ -69,7 +69,7 @@ void IOHandler::HandleIOReadEvent(const IOMessage& message) {
   descriptor->OnRead();
 }
 
-void IOHandler::HandleIOWriteEvent(const IOMessage& message) {
+void IOHandler::HandleIOWriteEvent(const EventMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOWriteEvent");
   IODescriptor* descriptor = 
       IODescriptorFactory::GetIODescriptor(message.descriptor_id);
@@ -82,7 +82,7 @@ void IOHandler::HandleIOWriteEvent(const IOMessage& message) {
   descriptor->OnWrite();
 }
 
-void IOHandler::HandleIOCloseEvent(const IOMessage& message) {
+void IOHandler::HandleIOCloseEvent(const EventMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOCloseEvent");
   IODescriptor* descriptor = 
       IODescriptorFactory::GetIODescriptor(message.descriptor_id);
@@ -95,7 +95,7 @@ void IOHandler::HandleIOCloseEvent(const IOMessage& message) {
   descriptor->OnClose();
 }
 
-void IOHandler::HandleIOMessageEvent(const IOMessage& message) {
+void IOHandler::HandleIOMessageEvent(const EventMessage& message) {
   MI_LOG_TRACE(logger, "HandleIOMessageEvent");
   IODescriptor* descriptor = 
       IODescriptorFactory::GetIODescriptor(message.descriptor_id);

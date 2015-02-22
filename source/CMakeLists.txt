@@ -18,11 +18,13 @@ ELSE()
   ENDIF()
 ENDIF()
 
+add_subdirectory(coroutine/libcoro)
 
 set(MINOTAUR_SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h
   ${MINOTAUR_EVENT_SOURCE}
   io_service.cpp
+  message.cpp
   event/event_loop.cpp
   event/event_loop_data.cpp
   event/event_loop_notifier.cpp
@@ -40,6 +42,10 @@ set(MINOTAUR_SOURCE
   net/protocol/line/line_protocol.cpp
   net/protocol/http/http_parser.c
   net/protocol/http/http_protocol.cpp
+  coroutine/libcoro/coro.c
+  coroutine/libcoro/coro.h
+  coroutine/coroutine.cpp
+  coroutine/coro_factory.cpp
 
   #event/timer/timer_wheel.cpp
 # matrix/matrix_item_map.cpp
@@ -48,3 +54,4 @@ set(MINOTAUR_SOURCE
 add_library(minotaur
   ${MINOTAUR_SOURCE}
 )
+set_target_properties(minotaur PROPERTIES COMPILE_DEFINITIONS "CORO_ASM=1")

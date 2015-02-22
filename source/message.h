@@ -9,6 +9,8 @@
 
 namespace minotaur {
 
+class ProtocolMessage;
+
 class MessageType {
  public:
   enum {
@@ -47,20 +49,41 @@ class MessageBase {
   }
   virtual ~MessageBase() {};
 
-  std::string ToString() const {
-    std::ostringstream oss;
-    Dump(oss);
-    return oss.str();
-  }
+  std::string ToString() const;
+  virtual void Dump(std::ostream& os) const;
 
-  virtual void Dump(std::ostream& os) const {
-    os << "{\"type\": \"IOMessage\""
-       << ", \"type_id\": " << type_id << "}";
-  };
 
   uint8_t type_id;
 };
 
+class EventMessage : public MessageBase {
+ public:
+  EventMessage() 
+      : MessageBase(MessageType::kUnknownEvent), descriptor_id(0) {
+  }
+
+  EventMessage(
+      uint8_t type_id_, 
+      uint64_t descriptor_id_, 
+      uint64_t payload_ = 0) 
+      : MessageBase(type_id_), 
+      descriptor_id(descriptor_id_), 
+      payload(payload_) {
+  }
+
+  void Destroy() const;
+  virtual void Dump(std::ostream& os) const;
+
+  uint64_t descriptor_id;
+  uint64_t payload;
+
+  ProtocolMessage* GetProtocolMessage() const {
+    if (type_id == MessageType::kIOMessageEvent && payload) {
+      return (ProtocolMessage*)payload;
+    }
+    return NULL;
+  }
+};
 
 class MessageFactory {
  public:
@@ -83,6 +106,8 @@ class MessageFactory {
     delete message;
   }
 };
+
+std::ostream& operator << (std::ostream& os, const EventMessage& message);
 
 } //namespace minotaur
 

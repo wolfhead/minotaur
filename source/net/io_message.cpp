@@ -6,25 +6,6 @@
 #include <sstream>
 
 namespace minotaur {
-///////////////////////////////////////////////////////////////////////
-// IOMessage
-void IOMessage::Destroy() const {
-  if (GetProtocolMessage()) {
-    MessageFactory::Destroy(GetProtocolMessage());
-  }
-}
-
-void IOMessage::Dump(std::ostream& os) const {
-  os << "{\"type\": \"IOMessage\""
-     << ", \"type_id\": " << (int)type_id
-     << ", \"descriptor_id\": " << descriptor_id;
-  if (GetProtocolMessage()) {
-    os << ", \"payload\": " << GetProtocolMessage()->ToString();
-  } else {
-    os << ", \"payload\": " << payload;
-  }
-  os << "}";
-}
 
 ///////////////////////////////////////////////////////////////////////
 // LineMessage
@@ -69,11 +50,6 @@ void HttpProtocolMessage::Dump(std::ostream& os) const {
   }
 
   os << "}";
-}
-
-std::ostream& operator << (std::ostream& os, const IOMessage& message) {
-  message.Dump(os);
-  return os;
 }
 
 std::ostream& operator << (std::ostream& os, const ProtocolMessage& message) {
