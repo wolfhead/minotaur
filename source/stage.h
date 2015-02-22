@@ -19,6 +19,10 @@ struct QueueHelper<MessageType, true> {
   typedef typename queue::MPMCQueue<
     MessageType,
     queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
+
+  typedef typename queue::MPMCQueue<
+    MessageType,
+    queue::NoWaitStrategy> PriorityMessageQueueType;
 };
 
 template<typename MessageType>
@@ -27,6 +31,10 @@ struct QueueHelper<MessageType, false> {
     MessageType, 
     queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
 
+  typedef typename queue::MPSCQueue<
+    MessageType,
+    queue::NoWaitStrategy> PriorityMessageQueueType;
+  
   //typedef typename queue::MPSCQueue<
   //  MessageType, 
   //  queue::BusyLoopStrategy> MessageQueueType;
@@ -39,6 +47,9 @@ class StageWorker {
   typedef typename QueueHelper<
     MessageType, 
     Handler::share_queue>::MessageQueueType MessageQueueType;
+  typedef typename QueueHelper<
+    MessageType, 
+    Handler::share_queue>::PriorityMessageQueueType PriorityMessageQueueType;
 
   StageWorker(); 
 
@@ -47,8 +58,12 @@ class StageWorker {
   void SetHandler(Handler* handler, bool own);
   Handler* GetHandler() {return handler_;}
 
-  void SetQueue(MessageQueueType* queue, bool own);
+  void SetQueue(
+      MessageQueueType* queue, 
+      PriorityMessageQueueType* pri_queue,
+      bool own);
   MessageQueueType* GetMessageQueue() {return queue_;}
+  PriorityMessageQueueType* GetPriorityMessageQueue() {return pri_queue_;}
 
   void SetStageName(const std::string& name) {stage_name_ = name;}
 
@@ -67,6 +82,7 @@ class StageWorker {
   bool own_handler_;
 
   MessageQueueType* queue_;
+  PriorityMessageQueueType* pri_queue_;
   bool own_queue_;
 
   std::string stage_name_;
@@ -78,7 +94,13 @@ class Stage {
   typedef typename HandlerFactory::Handler Handler; 
   typedef StageWorker<Handler> StageWorkerType;
   typedef typename Handler::MessageType MessageType;
-  typedef typename QueueHelper<MessageType, Handler::share_queue>::MessageQueueType MessageQueueType;
+  typedef typename QueueHelper<
+    MessageType, 
+    Handler::share_queue>::MessageQueueType MessageQueueType;
+  typedef typename QueueHelper<
+    MessageType, 
+    Handler::share_queue>::PriorityMessageQueueType PriorityMessageQueueType;
+
 
   Stage(
       HandlerFactory* factory, 
@@ -91,6 +113,7 @@ class Stage {
   int Wait();
   int Stop();
   bool Send(const MessageType& message);
+  bool SendPriority(const MessageType& message);
 
   void SetStageName(const std::string& name) {stage_name_ = name;}
 
@@ -107,6 +130,7 @@ class Stage {
 
   HandlerFactory* factory_;
   MessageQueueType* queue_;
+  PriorityMessageQueueType* pri_queue_;
   Handler* handler_;
   StageWorkerType* worker_;
   std::string stage_name_;

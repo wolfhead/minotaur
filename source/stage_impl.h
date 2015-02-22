@@ -19,6 +19,7 @@ StageWorker<Handler>::StageWorker()
     , handler_(NULL)
     , own_handler_(false)
     , queue_(NULL)
+    , pri_queue_(NULL)
     , own_queue_(false) {
 }
 
@@ -34,6 +35,11 @@ StageWorker<Handler>::~StageWorker() {
     delete queue_;
     queue_ = NULL;
   }
+
+  if (pri_queue_ && own_queue_) {
+    delete pri_queue_;
+    pri_queue_ = NULL;
+  }
 }
 
 template <typename Handler>
@@ -43,8 +49,12 @@ void StageWorker<Handler>::SetHandler(Handler* handler, bool own) {
 }
 
 template <typename Handler>
-void StageWorker<Handler>::SetQueue(MessageQueueType* queue, bool own) {
+void StageWorker<Handler>::SetQueue(
+    MessageQueueType* queue, 
+    PriorityMessageQueueType* pri_queue,
+    bool own) {
   queue_ = queue;
+  pri_queue_ = pri_queue;
   own_queue_ = own;
 }
 
@@ -73,9 +83,12 @@ void StageWorker<Handler>::Run() {
 
   MessageType message;
   while (running_) {
-    if (!queue_->Pop(&message, 1)) {
-      continue;
+    if (!pri_queue_->Pop(&message)) {
+      if (!queue_->Pop(&message, 1)) {
+        continue;
+      }
     }
+
     handler_->Handle(message);
   } 
 }
@@ -150,7 +163,16 @@ bool Stage<HandlerFactory>::Send(const MessageType& message) {
   MessageQueueType* queue = 
       worker_[Handler::HashMessage(message, worker_count_)].GetMessageQueue();
   if (!queue->Push(message)) {
-    std::cout << "queue after length:" << queue->Size() << ", capacity:" << queue->Capacity() << std::endl;
+    return false;
+  }
+  return true;
+}
+
+template <typename HandlerFactory>
+bool Stage<HandlerFactory>::SendPriority(const MessageType& message) {
+  PriorityMessageQueueType* queue = 
+      worker_[Handler::HashMessage(message, worker_count_)].GetPriorityMessageQueue();
+  if (!queue->Push(message)) {
     return false;
   }
   return true;
@@ -166,12 +188,16 @@ template <typename HandlerFactory>
 int Stage<HandlerFactory>::BindQueue() {
   if (Handler::share_queue) {
     queue_ = new MessageQueueType(queue_size_);
+    pri_queue_ = new PriorityMessageQueueType(queue_size_);
     for (size_t i = 0; i != worker_count_; ++i) {
-      worker_[i].SetQueue(queue_, false);
+      worker_[i].SetQueue(queue_, pri_queue_, false);
     }
   } else {
     for (size_t i = 0; i != worker_count_; ++i) {
-      worker_[i].SetQueue(new MessageQueueType(queue_size_), true);
+      worker_[i].SetQueue(
+          new MessageQueueType(queue_size_), 
+          new PriorityMessageQueueType(queue_size_),
+          true);
     }      
   }  
   return 0;
@@ -220,6 +246,10 @@ void Stage<HandlerFactory>::DestroyWorker() {
   if (queue_) {
     delete queue_;
     queue_ = NULL;
+  }
+  if (pri_queue_) {
+    delete pri_queue_;
+    pri_queue_ = NULL;
   }
   if (handler_) {
     delete handler_;
