@@ -61,12 +61,15 @@ int EventLoopThread::Stop() {
 void EventLoopThread::Run() {
   LOG_INFO(logger, "EventLoopThread::Run Start");
   prctl(PR_SET_NAME, "event");
+  event_loop_notifier_.SetWorkingThreadId(EventLoopNotifier::GetThreadId());
 
   while (running_) {
     if (event_loop_.ProcessEvent(1000) < 0) {
       LOG_ERROR(logger, "EventLoopThread::Run ProcessEvent fail with:"
           << SystemError::FormatMessage());
     } 
+
+    event_loop_notifier_.Process();
   }
 
   LOG_INFO(logger, "EventLoopThread::Run Stop");

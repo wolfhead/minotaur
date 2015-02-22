@@ -27,8 +27,6 @@ class Acceptor : public Socket {
 
   inline int GetPort() const {return port_;}
 
-  
-
  private:
   LOGGER_CLASS_DECL(logger);
 

@@ -4,6 +4,8 @@
  * @file event_loop_notifier.h
  * @author Wolfhead
  */
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "event_loop_data.h"
 #include "../common/logger.h"
 #include "../queue/sequencer.hpp"
@@ -41,6 +43,10 @@ class EventLoopNotifier {
   EventLoopNotifier(EventLoop* event_loop);
   ~EventLoopNotifier();
 
+  void SetWorkingThreadId(uint32_t thread_id) {
+    working_thread_id_ = thread_id;
+  }
+
   int Init();
 
   int Notify(int fd, uint32_t mask, FdEventProc* proc, void* data);
@@ -56,6 +62,17 @@ class EventLoopNotifier {
   int UnregisterRead(int fd);
 
   int UnregisterWrite(int fd);
+
+  int Process();
+
+  static inline uint32_t GetThreadId() {
+    #ifdef SYS_gettid
+      pid_t tid = syscall(SYS_gettid);
+      return tid;
+    #else
+      #error "SYS_gettid unavailable on this system"
+    #endif  
+  }
 
  private:
   typedef queue::MPSCQueue<
@@ -78,6 +95,7 @@ class EventLoopNotifier {
 
   int event_fd_;
   MessageQueueType queue_;
+  uint32_t working_thread_id_;
 };
 
 std::ostream& operator << (std::ostream& os, const NotifyMessage& notify_message);

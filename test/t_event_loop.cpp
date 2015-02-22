@@ -11,6 +11,7 @@
 #include <event/event_loop_stage.h>
 #include <net/socket_op.h>
 #include <net/acceptor.h>
+#include <net/connector.h>
 #include <net/io_handler.h>
 #include <common/system_error.h>
 #include <io_service.h>
@@ -132,12 +133,34 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   int ret = io_service.Start();
   BOOST_CHECK_EQUAL(ret, 0);
 
-  Acceptor* acceptor = IODescriptorFactory::Instance()
+  Acceptor* http_acceptor = IODescriptorFactory::Instance()
     .CreateAcceptor(
         &io_service, "0.0.0.0", 
-        4433, ProtocolType::kHttpProtocol);
-  ret = acceptor->Start();
+        6600, ProtocolType::kHttpProtocol);
+  ret = http_acceptor->Start();
   BOOST_CHECK_EQUAL(0, ret);
+  
+  Acceptor* line_acceptor = IODescriptorFactory::Instance()
+    .CreateAcceptor(
+        &io_service, "0.0.0.0", 
+        6601, ProtocolType::kLineProtocol);
+  ret = line_acceptor->Start();
+  BOOST_CHECK_EQUAL(0, ret);
+
+  Acceptor* rapid_acceptor = IODescriptorFactory::Instance()
+    .CreateAcceptor(
+        &io_service, "0.0.0.0", 
+        6602, ProtocolType::kRapidProtocol);
+  ret = rapid_acceptor->Start();
+  BOOST_CHECK_EQUAL(0, ret);
+
+  Connector* rapid_connector = IODescriptorFactory::Instance()
+    .CreateConnector(
+        &io_service, "127.0.0.1",
+        6603, ProtocolType::kRapidProtocol);
+  ret = rapid_connector->Start();
+  BOOST_CHECK_EQUAL(0, ret);
+
   ret = io_service.Run();
   BOOST_CHECK_EQUAL(0, ret);
 }

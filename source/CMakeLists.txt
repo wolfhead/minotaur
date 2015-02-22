@@ -37,9 +37,11 @@ set(MINOTAUR_SOURCE
   net/io_handler.cpp
   net/socket.cpp
   net/acceptor.cpp
+  net/connector.cpp
   net/channel.cpp
   net/protocol/protocol_factory.cpp
   net/protocol/line/line_protocol.cpp
+  net/protocol/rapid/rapid_protocol.cpp
   net/protocol/http/http_parser.c
   net/protocol/http/http_protocol.cpp
   coroutine/libcoro/coro.c

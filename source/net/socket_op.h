@@ -97,6 +97,20 @@ class SocketOperation {
     return -1;
   }
 
+  inline static int Connect(int fd, const struct sockaddr_in* addr) {
+    for (;;) {
+      int ret = connect(fd, (struct sockaddr*)addr, sizeof(struct sockaddr_in));
+      if (ret == -1) {
+        if (SystemError::Get() == EINTR) {
+          continue;
+        }
+        break;
+      }
+      return fd;
+    } 
+    return -1;
+  }
+
   inline static int Receive(int fd, void* buffer, uint32_t bytes) {
     return read(fd, buffer, bytes);
   }

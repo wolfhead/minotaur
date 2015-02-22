@@ -16,7 +16,7 @@ class ProtocolMessage : public MessageBase {
   virtual void Dump(std::ostream& os) const;
 
   uint64_t descriptor_id;
-  uint32_t sequence_id; 
+  uint32_t sequence_id;
 };
 
 class LineProtocolMessage : public ProtocolMessage {
@@ -28,6 +28,24 @@ class LineProtocolMessage : public ProtocolMessage {
 
   virtual void Dump(std::ostream& os) const;
 
+  std::string body;
+};
+
+class RapidProtocolMessage : public ProtocolMessage {
+ public:
+  enum {
+    kDataType = 0,
+    kPingType = 1,
+    kPongType = 2,
+    kOneway = 3,
+  };
+
+  RapidProtocolMessage() {
+    type_id = MessageType::kRapidProtocolMessage;
+  }
+
+  uint16_t cmd_id;
+  uint32_t extra;
   std::string body;
 };
 

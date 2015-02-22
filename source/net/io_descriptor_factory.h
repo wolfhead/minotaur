@@ -14,6 +14,7 @@ class IOService;
 class IODescriptor;
 class Channel;
 class Acceptor;
+class Connector;
 
 class IODescriptorFactory {
  public:
@@ -28,6 +29,12 @@ class IODescriptorFactory {
       int fd);
 
   Acceptor* CreateAcceptor(
+      IOService* io_service,
+      const std::string& host, 
+      int port, 
+      int protocol_type);
+
+  Connector* CreateConnector(
       IOService* io_service,
       const std::string& host, 
       int port, 

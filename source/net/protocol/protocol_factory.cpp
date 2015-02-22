@@ -5,6 +5,7 @@
 #include "protocol_factory.h"
 #include "protocol.h"
 #include "line/line_protocol.h"
+#include "rapid/rapid_protocol.h"
 #include "http/http_protocol.h"
 
 namespace minotaur {
@@ -13,6 +14,7 @@ LOGGER_CLASS_IMPL_NAME(logger, ProtocolFactory, "net.ProtocolFactory");
 
 ProtocolFactory::ProtocolFactory() {
   RegisterProtocol(ProtocolType::kLineProtocol, new LineProtocol());
+  RegisterProtocol(ProtocolType::kRapidProtocol, new RapidProtocol());
   RegisterProtocol(ProtocolType::kHttpProtocol, new HttpProtocol());
 }
 

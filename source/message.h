@@ -18,6 +18,7 @@ class MessageType {
     kIOEvent,
     kIOMessageEvent,
     kLineProtocolMessage,
+    kRapidProtocolMessage,
     kHttpProtocolMessage,
   };
 
@@ -27,6 +28,7 @@ class MessageType {
       "io event",
       "io message event",
       "line protocol message",
+      "rapid protocol message",
       "Http protocol message",
     };
 

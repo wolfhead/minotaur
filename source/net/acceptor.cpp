@@ -29,7 +29,7 @@ int Acceptor::Start() {
   struct sockaddr_in sa;
 
   if (0 != SocketOperation::GetSocketAddress(GetHost(), GetPort(), &sa)) {
-    MI_LOG_ERROR(logger, "Acceptor::Accept GetSocketAddress failed"
+    MI_LOG_ERROR(logger, "Acceptor::Start GetSocketAddress failed"
         << ", host:" << GetHost()
         << ", port:" << GetPort());
     return -1;
@@ -37,34 +37,34 @@ int Acceptor::Start() {
 
   int fd = SocketOperation::CreateTcpSocket();
   if (fd < 0) {
-    MI_LOG_ERROR(logger, "Acceptor::Accept CreateTcpSocket, failed with:" 
+    MI_LOG_ERROR(logger, "Acceptor::Start CreateTcpSocket, failed with:" 
         << SystemError::FormatMessage());
     return -1;
   }
 
   if (0 != SocketOperation::SetReuseAddr(fd)) {
-    MI_LOG_ERROR(logger, "Acceptor::Accept SetReuseAddr, failed with:" 
+    MI_LOG_ERROR(logger, "Acceptor::Start SetReuseAddr, failed with:" 
         << SystemError::FormatMessage());
     close(fd);
     return -1;
   }
 
   if (0 != SocketOperation::SetNonBlocking(fd)) {
-    MI_LOG_ERROR(logger, "Acceptor::Accept SetNonBlocking, failed with:" 
+    MI_LOG_ERROR(logger, "Acceptor::Start SetNonBlocking, failed with:" 
         << SystemError::FormatMessage());
     close(fd);
     return -1;
   }
 
   if (0 != SocketOperation::Bind(fd, sa)) {
-    MI_LOG_ERROR(logger, "Acceptor::Accept bind, failed with:" 
+    MI_LOG_ERROR(logger, "Acceptor::Start bind, failed with:" 
         << SystemError::FormatMessage());
     close(fd);
     return -1;
   }
   
   if (0 != SocketOperation::Listen(fd)) {
-    MI_LOG_ERROR(logger, "Acceptor::Accept listen, failed with:"
+    MI_LOG_ERROR(logger, "Acceptor::Start listen, failed with:"
         << SystemError::FormatMessage());
     close(fd);
     return -1;
@@ -73,19 +73,19 @@ int Acceptor::Start() {
   SetFD(fd);
 
   if (0 != RegisterRead()) {
-    MI_LOG_ERROR(logger, "Acceptor::Accept RegisterRead fail");
+    MI_LOG_ERROR(logger, "Acceptor::Start RegisterRead fail");
     SetFD(-1);
     close(fd);
     return -1;
   }
 
-  MI_LOG_TRACE(logger, "Acceptor::Accept Regsitered:" << *this);
+  MI_LOG_TRACE(logger, "Acceptor::Start Regsitered:" << *this);
 
   return 0;
 }
 
 int Acceptor::Stop() {
-  assert("no implement");
+  assert(!"no implement");
   return -1;
 }
 

@@ -71,6 +71,8 @@ class IODescriptor : public boost::noncopyable {
 
   int RegisterReadWrite();
 
+  int RegisterClose();
+
   int SendEventMessage(const EventMessage& message);
 
   bool UseIOStage() const {return use_io_stage_;}

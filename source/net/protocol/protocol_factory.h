@@ -15,6 +15,7 @@ class ProtocolType {
   enum {
     kUnknownProtocol = 0,
     kLineProtocol,
+    kRapidProtocol,
     kHttpProtocol,
   };
 
@@ -22,6 +23,7 @@ class ProtocolType {
     static const std::string str[] = {
       "unknown",
       "line",
+      "rapid",
       "http",
     };
 
@@ -36,6 +38,7 @@ class ProtocolType {
     static const std::string str[] = {
       "unknown",
       "line",
+      "rapid",
       "http"
     };
 

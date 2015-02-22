@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/eventfd.h>
+#include <pthread.h>
 #include "event_loop.h"
 #include "../common/system_error.h"
 #include "../net/socket_op.h"
@@ -28,7 +29,8 @@ EventLoopNotifier::EventLoopNotifier(
     EventLoop* event_loop) 
     : event_loop_(event_loop)
     , event_fd_(-1)
-    , queue_(1024 * 1024) {
+    , queue_(1024 * 1024) 
+    , working_thread_id_(0) {
 }
 
 EventLoopNotifier::~EventLoopNotifier() {
@@ -74,10 +76,19 @@ int EventLoopNotifier::Notify(int fd, uint32_t mask, FdEventProc* proc, void* da
     .proc = proc,
   };
 
+  uint32_t thread_id = GetThreadId();
+  if (thread_id == working_thread_id_) {
+    return NotifyEventLoop(event_loop_, message);
+  }
+
   if (!queue_.Push(message)) {
     LOG_FATAL(logger, "EventLoopNotifier::Notify queue fail"
         << ", fd:" << fd);
     return -1;
+  }
+
+  if (queue_.Size() < 16) {
+    return 0;
   }
 
   if (SocketOperation::Send(event_fd_, &add_count, sizeof(uint64_t)) != sizeof(uint64_t)) {
@@ -122,6 +133,11 @@ int EventLoopNotifier::UnregisterRead(int fd) {
 
 int EventLoopNotifier::UnregisterWrite(int fd) {
   return Notify(fd, NotifyMessage::REMOVE_WRITE, NULL, NULL); 
+}
+
+int EventLoopNotifier::Process() {
+  EventLoopNotifierProc(event_loop_, event_fd_, &queue_, 0);
+  return 0;
 }
 
 void EventLoopNotifier::EventLoopNotifierProc(
