@@ -3,10 +3,26 @@
  * @author Wolfhead
  */
 #include "service_handler.h"
+#include "../net/io_descriptor.h"
+#include "../net/io_descriptor_factory.h"
 
 namespace minotaur {
 
 LOGGER_CLASS_IMPL_NAME(logger, ServiceHandlerBase, "ServiceHandlerBase");
+
+uint32_t ServiceHandlerBase::HashMessage(
+    const EventMessage& message, 
+    uint32_t worker_count) {
+  IODescriptor* descriptor = 
+      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
+  if (descriptor) {
+    return descriptor->GetIN() % worker_count;
+  } else {
+    MI_LOG_ERROR(logger, "ServiceHandlerBase::HashMessage descriptor not found:"
+        << message);
+    return (message.descriptor_id) % worker_count; 
+  }
+}
 
 ServiceHandlerBase::ServiceHandlerBase(
     IOService* io_service, 

@@ -48,6 +48,9 @@ add_executable(t_stage
 add_executable(t_coroutine
   t_coroutine.cpp)
 
+add_executable(t_timing_wheel
+  t_timing_wheel.cpp)
+
 #add_executable(t_lf_static_list_pool
 #  t_lf_static_list_pool.cpp)
 

@@ -4,6 +4,7 @@
 #include <boost/thread.hpp>
 #define private public
 #include <queue/sequencer.hpp>
+#include <queue/fifo.h>
 #undef private
 #include <common/logger.h>
 #include <common/time_util.h>
@@ -17,8 +18,9 @@ LOGGER_STATIC_DECL_IMPL(logger, "root");
 using namespace minotaur;
 using namespace minotaur::queue;
 
-//#define CHECK_RESULT 1
-typedef minotaur::queue::MPMCQueue<int64_t, ConditionVariableStrategy<0, 256> > Sequencer;
+#define CHECK_RESULT 1
+//typedef minotaur::queue::MPMCQueue<int64_t, ConditionVariableStrategy<0, 16> > Sequencer;
+typedef Fifo<int64_t> Sequencer;
 
 BOOST_AUTO_TEST_CASE(TestRingBufferGetIndex) {
   minotaur::queue::RingBuffer<int> ring(1024);
@@ -169,10 +171,10 @@ void ConsumerProcLockFree(Sequencer* ring, std::vector<int64_t>* vec, boost::mut
 }//namespace 
 
 BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
-  static const int ring_size = 1024*1024;
+  static const int ring_size = 1024*32;
   static const int push_count = 10000000;
-  static const int producer_count = 2;
-  static const int consumer_count = 2;
+  static const int producer_count = 4;
+  static const int consumer_count = 1;
 
   Sequencer ring(ring_size);
 

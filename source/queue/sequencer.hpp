@@ -7,6 +7,9 @@
 
 #include <boost/thread.hpp>
 #include <mutex>
+#include <condition_variable>
+#include <chrono>
+#include "ring_buffer.h"
 
 namespace minotaur { namespace queue {
 
@@ -106,12 +109,7 @@ class Sequencer {
   uint64_t Size() const {
     uint64_t consumer_index = consumer_curser_.Get();
     uint64_t producer_index = producer_curser_.Get();
-
-    if (producer_index >= consumer_index) {
-      return producer_index - consumer_index;
-    } else {
-      return 0xFFFFFFFFFFFFFFFF - (consumer_index - producer_index - 1);
-    }
+    return RingBuffer<T>::GetDistance(consumer_index, producer_index);
   }
 
   uint64_t Capacity() const {
@@ -256,55 +254,25 @@ class ConditionVariableStrategy {
   }
   bool Wait(uint16_t loop) {
     if (loop < RetryLoops) return true; 
-    boost::unique_lock<boost::mutex> lock(lock_);
+    std::unique_lock<std::mutex> lock(lock_);
     cond_.wait(lock);
     return true;
   }
 
   bool TimedWait(uint16_t loop, uint32_t milliseconds) {
     if (loop < RetryLoops) return true; 
-    boost::system_time timeout = 
-          boost::get_system_time() + 
-          boost::posix_time::milliseconds(milliseconds);  
-    boost::unique_lock<boost::mutex> lock(lock_);
-    return cond_.timed_wait(lock, timeout);
+    std::unique_lock<std::mutex> lock(lock_);
+    return 
+      cond_.wait_for(lock,  
+        std::chrono::milliseconds(milliseconds)) 
+      == std::cv_status::no_timeout;
   }
 
   bool WouldBlock() const {return true;}
 
  private:
-  boost::condition_variable cond_;
-  boost::mutex lock_;
-};
-
-template<
-  typename T
-  >
-class RingBuffer {
- public:
-  RingBuffer(uint64_t size) 
-      : size_(size)
-      , mask_(size - 1)
-      , buffer_(new T[size_]) {
-  }
-
-  ~RingBuffer() {
-    if (buffer_) {
-      delete [] buffer_;
-      buffer_ = NULL;
-    }
-  }
-
-  T& At(uint64_t index) {return buffer_[index & mask_];}
-  const T& At(uint64_t index) const {return buffer_[index & mask_];}
-
-  uint64_t Size() const {return size_;}
-  uint64_t Index(uint64_t index) const {return index & mask_;}
-
- private:
-  uint64_t size_;
-  uint64_t mask_;
-  T* buffer_;
+  std::condition_variable cond_;
+  std::mutex lock_;
 };
 
 } //namespace queue

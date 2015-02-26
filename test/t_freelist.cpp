@@ -19,6 +19,13 @@ struct B: public A {
   uint32_t b;
 };
 
+struct TestStruct {
+  uint64_t a;
+  uint64_t b;
+  uint64_t c;
+  uint64_t d;
+};
+
 BOOST_AUTO_TEST_CASE(TestInt) {
   std::vector<uint64_t*> pointers;
   std::vector<uint64_t> keys;
@@ -124,7 +131,7 @@ void RunnerKey(freelist<std::string>* freelist) {
     }
     ++fail_count;
   }
-
+  sleep(1);
   std::cout << "success:" << success_count << ",fail:" << fail_count << std::endl;
 }
 
@@ -142,6 +149,7 @@ void RunnerNew() {
     }
     ++fail_count;
   }
+  sleep(1);
   std::cout << "success:" << success_count << ",fail:" << fail_count << std::endl;
 }
 
@@ -183,6 +191,36 @@ BOOST_AUTO_TEST_CASE(TestThreadingNew) {
   for (size_t i = 0; i != threads.size(); ++i) {
     threads[i]->join();
     delete threads[i];
+  }
+}
+
+BOOST_AUTO_TEST_CASE(TestCopyStruct) {
+  freelist<TestStruct> freelist(1024);
+
+  TestStruct target;
+  int i = 100000000;
+  while (i--) {
+    TestStruct tmp;
+    tmp.a = i;
+    tmp.b = i;
+    tmp.c = i;
+    tmp.d = i;
+    target = tmp;
+  }
+}
+
+BOOST_AUTO_TEST_CASE(TestNewStruct) {
+  freelist<TestStruct> freelist(1024);
+
+  TestStruct target;
+  int i = 100000000;
+  while (i--) {
+    TestStruct* tmp = new TestStruct;
+    tmp->a = i;
+    tmp->b = i;
+    tmp->c = i;
+    tmp->d = i;
+    delete tmp;
   }
 }
 

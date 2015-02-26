@@ -84,7 +84,7 @@ void StageWorker<Handler>::Run() {
   MessageType message;
   while (running_) {
     if (!pri_queue_->Pop(&message)) {
-      if (!queue_->Pop(&message, 1)) {
+      if (!queue_->Pop(&message, 50)) {
         continue;
       }
     }

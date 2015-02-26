@@ -55,9 +55,7 @@ class ServiceHandlerBase {
 
   virtual int Stop();
 
-  static uint32_t HashMessage(const EventMessage& message, uint32_t worker_count) {
-    return 0;
-  }
+  static uint32_t HashMessage(const EventMessage& message, uint32_t worker_count);
 
   virtual void Handle(const EventMessage& message);
 

@@ -315,6 +315,44 @@ class freelist {
   block_allocator block_allocator_;
 };
 
+template<typename T>
+class freelist_ptr {
+ public:
+  freelist_ptr() : key_(0) {
+  }
+
+  explicit freelist_ptr(uint64_t key) 
+      : key_(key) {
+  }
+
+  template<typename Y>
+  freelist_ptr(const freelist_ptr<Y>& other) 
+      : key_(other.key_) {
+  }
+
+  template<typename Y>
+  freelist_ptr<T>& operator=(const freelist_ptr<Y>& other) {
+    key_ = other.key_;
+    return *this;
+  }
+
+  template<typename Y>  
+  bool operator == (const freelist_ptr<Y>& other) {
+    return this.key_ == other.key_;
+  }
+
+  template<typename Y>  
+  bool operator != (const freelist_ptr<Y>& other) {
+    return this.key_ != other.key_;
+  }
+
+  operator bool() {
+    return freelist<T>::get_key(key_) != NULL;
+  }
+ private:
+  uint64_t key_;
+};
+
 } //namespace lockfree
 } //namespace minotaur
 

@@ -6,6 +6,7 @@
  */
 #include <boost/thread.hpp>
 #include "queue/sequencer.hpp"
+#include "queue/fifo.h"
 #include "message_queue.h"
 
 namespace minotaur {
@@ -18,7 +19,7 @@ template<typename MessageType>
 struct QueueHelper<MessageType, true> {
   typedef typename queue::MPMCQueue<
     MessageType,
-    queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
+    queue::ConditionVariableStrategy<0, 16> > MessageQueueType;
 
   typedef typename queue::MPMCQueue<
     MessageType,
@@ -29,15 +30,13 @@ template<typename MessageType>
 struct QueueHelper<MessageType, false> {
   typedef typename queue::MPSCQueue<
     MessageType, 
-    queue::ConditionVariableStrategy<0, 256> > MessageQueueType;
+    queue::ConditionVariableStrategy<0, 16> > MessageQueueType;
 
   typedef typename queue::MPSCQueue<
     MessageType,
     queue::NoWaitStrategy> PriorityMessageQueueType;
   
-  //typedef typename queue::MPSCQueue<
-  //  MessageType, 
-  //  queue::BusyLoopStrategy> MessageQueueType;
+  //typedef typename queue::Fifo<MessageType> MessageQueueType;
 };
 
 template <typename Handler>
@@ -75,7 +74,7 @@ class StageWorker {
 
   void Run();
 
-  bool running_;
+  volatile bool running_;
   boost::thread* thread_;
 
   Handler* handler_;

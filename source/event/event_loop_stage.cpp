@@ -3,6 +3,8 @@
  * @author Wolfhead
  */
 #include "event_loop_stage.h"
+#include "../net/io_descriptor_factory.h"
+#include "../net/io_descriptor.h"
 
 namespace minotaur { namespace event {
 
@@ -35,6 +37,19 @@ int EventLoopStage::Start() {
 
 int EventLoopStage::Stop() {  
   return DestoryEventLoopThread();
+}
+
+EventLoopNotifier& EventLoopStage::GetNotifier(int fd, void* data) {
+  if (fd == EventLoopNotifier::kDescriptorFD) {
+    IODescriptor* descriptor = 
+      IODescriptorFactory::GetIODescriptor((uint64_t)data);
+    if (descriptor) {
+      return  event_loop_thread_[descriptor->GetIN() % event_loop_thread_.size()]->GetNotifier();
+    } else {
+      MI_LOG_ERROR(logger, "EventLoopNotifier::GetNotifier descriptor not found");
+    }
+  }
+  return event_loop_thread_[fd % event_loop_thread_.size()]->GetNotifier();
 }
 
 int EventLoopStage::CreateEventLoopThread() {

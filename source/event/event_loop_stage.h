@@ -53,12 +53,7 @@ class EventLoopStage : public boost::noncopyable {
     return GetNotifier(fd, NULL).UnregisterWrite(fd);
   }
 
-  inline EventLoopNotifier& GetNotifier(int fd, void* data) {
-    if (fd == -2) {
-      fd = (uint64_t)data >> 3;
-    }
-    return event_loop_thread_[fd % event_loop_thread_.size()]->GetNotifier();
-  }
+  EventLoopNotifier& GetNotifier(int fd, void* data);
 
  private:
   LOGGER_CLASS_DECL(logger);

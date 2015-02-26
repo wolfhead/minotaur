@@ -119,13 +119,17 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   IOServiceConfig config;
   config.fd_count = 65535;
-  config.event_loop_worker = 1;
-  config.io_worker = 2;
+  config.event_loop_worker = 2;
+  config.io_worker = 4;
   config.io_queue_size = 1024 * 1024;
-  config.service_worker = 1;
+  config.service_worker = 2;
   config.service_queue_size = 1024 * 1024;
   config.service_handler_factory = 
     new GenericServiceHandlerFactory<TestServiceHandler>();
+
+  std::cin >> config.event_loop_worker 
+           >> config.io_worker
+           >> config.service_worker;
 
   IOService io_service(config);
   
