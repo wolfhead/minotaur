@@ -35,6 +35,7 @@ IOService::IOService(const IOServiceConfig& config)
 }
 
 IOService::~IOService() {
+  delete service_stage_;
   delete io_stage_;
   delete event_loop_stage_;
   current_ = NULL;

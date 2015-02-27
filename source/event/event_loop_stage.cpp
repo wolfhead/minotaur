@@ -40,14 +40,9 @@ int EventLoopStage::Stop() {
 }
 
 EventLoopNotifier& EventLoopStage::GetNotifier(int fd, void* data) {
-  if (fd == EventLoopNotifier::kDescriptorFD) {
-    IODescriptor* descriptor = 
-      IODescriptorFactory::GetIODescriptor((uint64_t)data);
-    if (descriptor) {
-      return  event_loop_thread_[descriptor->GetIN() % event_loop_thread_.size()]->GetNotifier();
-    } else {
-      MI_LOG_ERROR(logger, "EventLoopNotifier::GetNotifier descriptor not found");
-    }
+  if (fd == EventLoopNotifier::kDescriptorFD) { 
+  return event_loop_thread_[
+    IODescriptorFactory::GetVersion((uint64_t)data) % event_loop_thread_.size()]->GetNotifier();
   }
   return event_loop_thread_[fd % event_loop_thread_.size()]->GetNotifier();
 }

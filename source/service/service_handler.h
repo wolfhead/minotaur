@@ -18,6 +18,9 @@ class ServiceHandlerFactory {
  public:
   typedef ServiceHandlerBase Handler;
   typedef Stage<ServiceHandlerFactory> StageType;
+  
+  virtual ~ServiceHandlerFactory() {}
+
   virtual ServiceHandlerBase* Create(StageType* stage) = 0;
 
   ServiceHandlerFactory* BindIOService(IOService* io_service) {

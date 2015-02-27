@@ -15,15 +15,7 @@ LOGGER_CLASS_IMPL_NAME(logger, IOHandler, "net.io_handler");
 uint32_t IOHandler::HashMessage(
     const EventMessage& message, 
     uint32_t worker_count) {
-  IODescriptor* descriptor = 
-      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
-  if (descriptor) {
-    return descriptor->GetIN() % worker_count;
-  } else {
-    MI_LOG_ERROR(logger, "IOHandler::HashMessage descriptor not found:"
-        << message);
-    return (message.descriptor_id) % worker_count; 
-  }
+  return IODescriptorFactory::GetVersion(message.descriptor_id) % worker_count;
 }
 
 IOHandler::IOHandler(IOService* io_service, StageType* stage)

@@ -40,6 +40,11 @@ StageWorker<Handler>::~StageWorker() {
     delete pri_queue_;
     pri_queue_ = NULL;
   }
+
+  if (thread_) {
+    delete thread_;
+    thread_ = NULL;
+  }
 }
 
 template <typename Handler>
@@ -104,6 +109,7 @@ Stage<HandlerFactory>::Stage(
     , queue_size_(queue_size) 
     , factory_(factory)
     , queue_(NULL)
+    , pri_queue_(NULL)
     , handler_(NULL) 
     , worker_(NULL) 
     , stage_name_("stage") {

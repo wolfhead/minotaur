@@ -167,6 +167,11 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   ret = io_service.Run();
   BOOST_CHECK_EQUAL(0, ret);
+  
+  IODescriptorFactory::Instance().Destroy(http_acceptor);
+  IODescriptorFactory::Instance().Destroy(line_acceptor);
+  IODescriptorFactory::Instance().Destroy(rapid_acceptor);
+  IODescriptorFactory::Instance().Destroy(rapid_connector);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

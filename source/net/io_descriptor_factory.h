@@ -23,7 +23,6 @@ class IODescriptorFactory {
     return instance_;
   }
 
-
   Channel* CreateChannel(
       IOService* io_service, 
       int fd);
@@ -42,6 +41,11 @@ class IODescriptorFactory {
 
   static IODescriptor* GetIODescriptor(uint64_t descriptor_id) {
     return lockfree::freelist<IODescriptor>::get_key(descriptor_id);
+  }
+
+  static uint8_t GetVersion(uint64_t descriptor_id) {
+    return lockfree::tagged_ptr<IODescriptor>
+        ::extract_tag(descriptor_id);
   }
 
   bool Destroy(IODescriptor* descriptor);

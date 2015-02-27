@@ -89,6 +89,14 @@ struct construct_traits {
 } //namespace __detail__
 
 
+/**
+ *
+ * @thread-safe: 
+ *  dealloc and alloc can work concurruntly in different threads
+ *  dealloc and get_key to the same key
+ *  dealloc and dealloc to the same key 
+ *  is not thread safe
+ */
 class block_allocator {
  public:
   struct tagged_node;
@@ -136,6 +144,7 @@ class block_allocator {
   bool dealloc_key(uint64_t key) {
     tagged_node_ptr node(key);
     if (!check_node(node)) return false;
+    node->next = 0;
     dealloc_node(node);
     return true;
   }
@@ -171,7 +180,7 @@ class block_allocator {
   void init_free_list_on_mem_buffer(uint8_t* buffer) {
     for (uint32_t i = 0; i != batch_count_; ++i) {
       tagged_node* node = (tagged_node*)(buffer + i * block_size_);
-      tagged_node_ptr p(node, 0);
+      tagged_node_ptr p(node, i);
       dealloc_node(p);
     }
   }
