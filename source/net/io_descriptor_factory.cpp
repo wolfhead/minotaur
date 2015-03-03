@@ -34,7 +34,7 @@ Channel* IODescriptorFactory::CreateChannel(
     int fd) {
   uint64_t descriptor_id = 0;
   Channel* channel = freelist_.alloc_with<Channel>(
-      io_service, fd, &descriptor_id);
+      &descriptor_id, io_service, fd);
   if (!channel) {
     return NULL;
   }
@@ -57,7 +57,7 @@ Acceptor* IODescriptorFactory::CreateAcceptor(
 
   uint64_t descriptor_id = 0;
   Acceptor* acceptor = freelist_.alloc_with<Acceptor>(
-      io_service, host, port, &descriptor_id);
+      &descriptor_id, io_service, host, port);
   if (!acceptor) {
     return NULL;
   }
@@ -81,7 +81,7 @@ Connector* IODescriptorFactory::CreateConnector(
 
   uint64_t descriptor_id = 0;
   Connector* connector = freelist_.alloc_with<Connector>(
-      io_service, host, port, &descriptor_id);
+      &descriptor_id, io_service, host, port);
   if (!connector) {
     return NULL;
   }

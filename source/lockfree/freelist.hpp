@@ -8,7 +8,9 @@
 #include <algorithm>
 #include <atomic>
 #include <mutex>
+#include <iostream>
 #include <type_traits>
+#include <typeinfo>
 #include "tagged_ptr.hpp"
 
 namespace minotaur {
@@ -23,9 +25,9 @@ struct alloc_triats<true> {
   template<typename T>
   static void construct(T*) {}
 
-  template<typename T, typename A1>
-  static void construct(T* buffer, const A1& arg1) {
-    new (buffer) T(arg1);
+  template<typename T, typename... Args>
+  static void construct(T* buffer, const Args&... args) {
+    new (buffer) T(args...);
   }
 
   template<typename T>
@@ -34,24 +36,9 @@ struct alloc_triats<true> {
 
 template<>
 struct alloc_triats<false> {
-  template<typename T>
-  static void construct(T* buffer) {
-    new (buffer) T;
-  }
-
-  template<typename T, typename A1>
-  static void construct(T* buffer, const A1& arg1) {
-    new (buffer) T(arg1);
-  }
-
-  template<typename T, typename A1, typename A2>
-  static void construct(T* buffer, const A1& arg1, const A2& arg2) {
-    new (buffer) T(arg1, arg2);
-  }
-
-  template<typename T, typename A1, typename A2, typename A3>
-  static void construct(T* buffer, const A1& arg1, const A2& arg2, const A3& arg3) {
-    new (buffer) T(arg1, arg2, arg3);
+  template<typename T, typename... Args>
+  static void construct(T* buffer, const Args&... args) {
+    new (buffer) T(args...);
   }
 
   template<typename T>
@@ -66,19 +53,9 @@ struct construct_traits {
     alloc_triats<std::is_pod<T>::value>::construct(buffer);
   }
 
-  template<typename A1>
-  static void construct(T* buffer, const A1& arg1) {
-    alloc_triats<std::is_pod<T>::value>::construct(buffer, arg1);
-  }
-
-  template<typename A1, typename A2>
-  static void construct(T* buffer, const A1& arg1, const A2& arg2) {
-    alloc_triats<std::is_pod<T>::value>::construct(buffer, arg1, arg2);
-  }
-
-  template<typename A1, typename A2, typename A3>
-  static void construct(T* buffer, const A1& arg1, const A2& arg2, const A3& arg3) {
-    alloc_triats<std::is_pod<T>::value>::construct(buffer, arg1, arg2, arg3);
+  template<typename... Args>
+  static void construct(T* buffer, const Args&... args) {
+    alloc_triats<std::is_pod<T>::value>::construct(buffer, args...);
   }
 
   static void destruct(T* buffer) {
@@ -156,6 +133,20 @@ class block_allocator {
     return node->data;
   } 
 
+  template<typename T>
+  void print_stat(std::ostream& os) {
+    uint32_t alloc_count = 0;
+    uint32_t free_count = 0;
+    for (uint8_t* p : pool_) {
+      get_stat_on_mem_buffer(p, &alloc_count, &free_count);
+    }
+
+    os << "freelist<" << typeid(T).name() << ">"
+      << ", block:" << block_size_
+      << ", alloc:" << alloc_count 
+      << ", free:" << free_count << std::endl;
+  }
+
  private:
   static uint32_t get_block_size(uint32_t block_size) {
     return sizeof(tagged_node) + block_size;
@@ -182,6 +173,17 @@ class block_allocator {
       tagged_node* node = (tagged_node*)(buffer + i * block_size_);
       tagged_node_ptr p(node, i);
       dealloc_node(p);
+    }
+  }
+
+  void get_stat_on_mem_buffer(uint8_t* buffer, uint32_t* alloc_count, uint32_t* free_count) {
+    for (uint32_t i = 0; i != batch_count_; ++i) {
+      tagged_node* node = (tagged_node*)(buffer + i * block_size_);
+      if (tagged_node_ptr::extract_ptr(node->next) == node) {
+        ++(*alloc_count);
+      } else {
+        ++(*free_count);
+      }
     }
   }
 
@@ -232,71 +234,22 @@ class freelist {
       : block_allocator_(batch_count, sizeof(T)) {}
   freelist(uint32_t batch_count, uint32_t item_size)
       : block_allocator_(batch_count, std::max(item_size, (uint32_t)sizeof(T))) {}
-
-  T* alloc(uint64_t* key) {
+  ~freelist() {block_allocator_.print_stat<T>(std::cout);}
+    
+  template<typename... Args>
+  T* alloc(uint64_t* key, const Args&... args) {
     *key = block_allocator_.alloc_key();
     uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<T>::construct((T*)p);
+    if (p) __detail__::construct_traits<T>::construct((T*)p, args...);
     return (T*)p;  
   }
 
-  template<typename A1>
-  T* alloc(const A1& arg1, uint64_t* key) {
-    *key = block_allocator_.alloc_key();
-    uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<T>::construct((T*)p, arg1);
-    return (T*)p;  
-  }
-
-  template<typename A1, typename A2>
-  T* alloc(const A1& arg1, const A2& arg2, uint64_t* key) {
-    *key = block_allocator_.alloc_key();
-    uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<T>::construct((T*)p, arg1, arg2);
-    return (T*)p;  
-  }
-
-  template<typename A1, typename A2, typename A3>
-  T* alloc(const A1& arg1, const A2& arg2, const A3& arg3, uint64_t* key) {
-    *key = block_allocator_.alloc_key();
-    uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<T>::construct((T*)p, arg1, arg2, arg3);
-    return (T*)p;  
-  }
-
-  template<typename Y>
-  Y* alloc_with(uint64_t* key) {
+  template<typename Y, typename... Args>
+  Y* alloc_with(uint64_t* key, const Args&... args) {
     assert(sizeof(Y) <= block_allocator_.block_size());
     *key = block_allocator_.alloc_key();
     uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<Y>::construct((Y*)p);
-    return (Y*)p;  
-  }
-
-  template<typename Y, typename A1>
-  Y* alloc_with(const A1& arg1, uint64_t* key) {
-    assert(sizeof(Y) <= block_allocator_.block_size());
-    *key = block_allocator_.alloc_key();
-    uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<Y>::construct((Y*)p, arg1);
-    return (Y*)p;  
-  }
-
-  template<typename Y, typename A1, typename A2>
-  Y* alloc_with(const A1& arg1, const A2& arg2, uint64_t* key) {
-    assert(sizeof(Y) <= block_allocator_.block_size());
-    *key = block_allocator_.alloc_key();
-    uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<Y>::construct((Y*)p, arg1, arg2);
-    return (Y*)p;  
-  }
-
-  template<typename Y, typename A1, typename A2, typename A3>
-  Y* alloc_with(const A1& arg1, const A2& arg2, const A3& arg3, uint64_t* key) {
-    assert(sizeof(Y) <= block_allocator_.block_size());
-    *key = block_allocator_.alloc_key();
-    uint8_t* p = block_allocator_.get_key(*key);
-    if (p) __detail__::construct_traits<Y>::construct((Y*)p, arg1, arg2, arg3);
+    if (p) __detail__::construct_traits<Y>::construct((Y*)p, args...);
     return (Y*)p;  
   }
 

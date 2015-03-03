@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(TestClass) {
 
   for (int i = 0; i != 1024; ++i) {
     uint64_t key = 0;
-    A* p = freelist.alloc_with<B>(i, 0, &key);
+    A* p = freelist.alloc_with<B>(&key, i, 0);
     BOOST_CHECK(p != NULL);
     BOOST_CHECK(key != 0);
     pointers.push_back(p);

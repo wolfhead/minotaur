@@ -43,13 +43,6 @@ class TimingWheel {
     if (ticks < slots_.Size()) {
       slots_.At(current_slot_ + ticks) = 
         LinkNode(slots_.At(current_slot_ + ticks), node);
-
-      std::cout << "insert at:" << (int)slots_.Index(current_slot_ + ticks) 
-                << ", current:" << current_slot_
-                << ", current_index:" << (int)slots_.Index(current_slot_)
-                << ", node:" << node->ticks
-                << std::endl;
-
     } else {
       if (next_) {
         next_->AddNode((ticks - slots_.Size()) >> next_shift_, node);
@@ -67,10 +60,6 @@ class TimingWheel {
     uint64_t target_slot = current_slot_ + ticks;
 
     while (current_slot_ != target_slot) {
-      /*
-      std::cout << "processing:" << current_slot_ 
-                << ", index:" << slots_.Index(current_slot_) << std::endl; 
-      */
       slot_head = slots_.At(current_slot_);
 
       if (slot_head) {
@@ -81,8 +70,6 @@ class TimingWheel {
         } else {
           head = slot_head;
           tail = GetTail(slot_head);
-
-          std::cout << "assign" << std::endl; 
         }
       }
 
@@ -123,11 +110,9 @@ class TimingWheel {
   void PullNext() {
     if (!next_) return;
     TimingNode* head = next_->Advance(1);
-    std::cout << "Try Pull" << std::endl;
     while (head) {
       TimingNode* next = head->next;
       AddNode(((head->ticks >> self_shift_) & mask_), head);
-      std::cout << "Pull:" << ((head->ticks >> self_shift_) & mask_) << std::endl;
       head = next;
     }
   }
