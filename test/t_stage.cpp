@@ -2,6 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <stage.h>
+#include <handler_skeleton.h>
 #include <common/logger.h>
 #include <common/time_util.h>
 #include "unittest_logger.h"
@@ -14,7 +15,7 @@ LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestStage);
 
-class DummyHandler {
+class DummyHandler : public HandlerSkeleton {
  public:
   typedef DummyHandler self;
   typedef minotaur::Stage<self> StageType;
@@ -32,14 +33,6 @@ class DummyHandler {
     return 0;
   } 
 
-  int Start() {
-    return 0;
-  }
-
-  int Stop() {
-    return 0;
-  }
-
   void Handle(const MessageType& message) {
     if (message == 0) {
       LOG_TRACE(logger, "quit stage");
@@ -55,7 +48,7 @@ class DummyHandler {
   StageType* stage_;
 };
 
-class LatencyHandler {
+class LatencyHandler : public HandlerSkeleton {
  public:
   typedef LatencyHandler self;
   typedef minotaur::Stage<self> StageType;
@@ -83,14 +76,6 @@ class LatencyHandler {
           << ", sum_latency:" << sum_latency_
           << ", avg_latency:" << (double)sum_latency_ / sum_count_);
     }
-  }
-
-  int Start() {
-    return 0;
-  }
-
-  int Stop() {
-    return 0;
   }
 
   void Handle(const MessageType& message) {

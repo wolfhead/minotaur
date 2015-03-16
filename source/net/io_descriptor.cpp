@@ -53,7 +53,6 @@ void IODescriptor::IODescriptorProc(
     MI_LOG_TRACE(logger, "IODescriptor::IODescriptorProc EV_CLOSE, " 
         << *desc);
     event_loop->DeleteEvent(fd);
-    desc->SetCloseMark();
   } else if (desc->GetUseIOStage()) {
     //int remove_mask = 
     //  mask & (event::EventType::EV_READ | event::EventType::EV_WRITE);
@@ -77,11 +76,6 @@ void IODescriptor::IODescriptorProc(
 }
 
 int IODescriptor::RegisterRead() {
-  if (GetCloseMark()) {
-    MI_LOG_TRACE(logger, "IODescriptor::RegisterRead on close:" << *this);
-    return 0;
-  }
-
   return GetIOService()->GetEventLoopStage()->RegisterRead(
       event::EventLoopNotifier::kDescriptorFD, 
       &IODescriptor::IODescriptorProc,
@@ -89,11 +83,6 @@ int IODescriptor::RegisterRead() {
 }
 
 int IODescriptor::RegisterWrite() {
-  if (GetCloseMark()) {
-    MI_LOG_TRACE(logger, "IODescriptor::RegisterWrite on close:" << *this);
-    return 0;
-  }
-
   return GetIOService()->GetEventLoopStage()->RegisterWrite(
       event::EventLoopNotifier::kDescriptorFD,
       &IODescriptor::IODescriptorProc,
@@ -101,11 +90,6 @@ int IODescriptor::RegisterWrite() {
 }
 
 int IODescriptor::RegisterReadWrite() {
-  if (GetCloseMark()) {
-    MI_LOG_TRACE(logger, "IODescriptor::RegisterReadWrite on close:" << *this);
-    return 0;
-  }
-
   return GetIOService()->GetEventLoopStage()->RegisterReadWrite(
       event::EventLoopNotifier::kDescriptorFD,
       &IODescriptor::IODescriptorProc,

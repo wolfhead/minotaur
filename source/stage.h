@@ -64,8 +64,6 @@ class StageWorker {
   MessageQueueType* GetMessageQueue() {return queue_;}
   PriorityMessageQueueType* GetPriorityMessageQueue() {return pri_queue_;}
 
-  void SetStageName(const std::string& name) {stage_name_ = name;}
-
   int Start();
   void Stop();
   void Join();
@@ -83,8 +81,6 @@ class StageWorker {
   MessageQueueType* queue_;
   PriorityMessageQueueType* pri_queue_;
   bool own_queue_;
-
-  std::string stage_name_;
 };
 
 template <typename HandlerFactory>
@@ -100,7 +96,6 @@ class Stage {
     MessageType, 
     Handler::share_queue>::PriorityMessageQueueType PriorityMessageQueueType;
 
-
   Stage(
       HandlerFactory* factory, 
       uint32_t worker_count, 
@@ -113,8 +108,6 @@ class Stage {
   int Stop();
   bool Send(const MessageType& message);
   bool SendPriority(const MessageType& message);
-
-  void SetStageName(const std::string& name) {stage_name_ = name;}
 
  private:
   int BuildWorker();
@@ -132,7 +125,6 @@ class Stage {
   PriorityMessageQueueType* pri_queue_;
   Handler* handler_;
   StageWorkerType* worker_;
-  std::string stage_name_;
 };
 
 } //namespace minotaur

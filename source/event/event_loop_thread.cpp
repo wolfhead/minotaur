@@ -60,7 +60,7 @@ int EventLoopThread::Stop() {
 
 void EventLoopThread::Run() {
   LOG_INFO(logger, "EventLoopThread::Run Start");
-  prctl(PR_SET_NAME, "event");
+  prctl(PR_SET_NAME, "event_loop");
   event_loop_notifier_.SetWorkingThreadId(EventLoopNotifier::GetThreadId());
 
   while (running_) {

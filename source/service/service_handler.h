@@ -8,6 +8,7 @@
 #include "../message.h"
 #include "../common/logger.h"
 #include "../net/io_message.h"
+#include "../handler_skeleton.h"
 
 namespace minotaur {
 
@@ -43,7 +44,7 @@ class GenericServiceHandlerFactory : public ServiceHandlerFactory{
   }
 };
 
-class ServiceHandlerBase {
+class ServiceHandlerBase : public HandlerSkeleton {
  public:
   typedef Stage<ServiceHandlerFactory> StageType;
   typedef EventMessage MessageType;
@@ -53,10 +54,6 @@ class ServiceHandlerBase {
 
   ServiceHandlerBase(IOService* io_service, StageType* stage);
   virtual ~ServiceHandlerBase();
-
-  virtual int Start();
-
-  virtual int Stop();
 
   static uint32_t HashMessage(const EventMessage& message, uint32_t worker_count);
 

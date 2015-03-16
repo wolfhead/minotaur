@@ -17,6 +17,9 @@ IOBuffer::IOBuffer()
 }
 
 IOBuffer::~IOBuffer() {
+#ifdef MINOTAUR_MEM_CHECK
+  Dump(std::cout);
+#endif
   if (buffer_) {
     free(buffer_);
     buffer_ = NULL;

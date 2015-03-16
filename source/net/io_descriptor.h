@@ -14,9 +14,12 @@ namespace minotaur {
 
 class IOService;
 class EventMessage;
+class IOHandler;
 
 class IODescriptor : public boost::noncopyable {
  public:
+  friend IOHandler;
+
   IODescriptor(
       IOService* io_service, 
       int in, 
@@ -39,24 +42,9 @@ class IODescriptor : public boost::noncopyable {
 
   inline bool GetUseIOStage() const {return use_io_stage_;}
 
-  inline void SetCloseMark() {close_mark_.store(true, std::memory_order_release);}
-
-  inline bool GetCloseMark() {return close_mark_.load(std::memory_order_acquire);}
-
   virtual int Start() = 0;
 
   virtual int Stop() = 0;
-
-  virtual void Close();
-
-  // these functions might be called in either
-  // EventLoopStage or IOStage
-  // depending on GetUseIOStage
-  virtual void OnRead();
-
-  virtual void OnWrite();
-
-  virtual void OnClose();
 
   void Destroy();
 
@@ -65,6 +53,18 @@ class IODescriptor : public boost::noncopyable {
   std::string ToString() const;
 
  protected:
+  // release resource
+  virtual void Close();
+
+  // these functions might be called in either
+  // EventLoopStage or IOStage
+  // depending on GetUseIOStage
+  virtual void OnRead();
+
+  virtual void OnWrite();
+  // 
+  virtual void OnClose();
+
   int RegisterRead();
 
   int RegisterWrite(); 

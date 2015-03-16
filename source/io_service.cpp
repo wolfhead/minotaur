@@ -47,13 +47,11 @@ int IOService::Start() {
     return -1;
   }
 
-  io_stage_->SetStageName("io");
   if (0 != io_stage_->Start()) {
     MI_LOG_ERROR(logger, "IOService::Start io_stage fail");
     return -1;
   }
 
-  service_stage_->SetStageName("service");
   if (0 != service_stage_->Start()) {
     MI_LOG_ERROR(logger, "IOService::Start service_stage fail");
     return -1;

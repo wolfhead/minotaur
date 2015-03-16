@@ -21,12 +21,6 @@ class Channel : public Socket {
 
   virtual int Stop();
 
-  virtual void OnRead();
-
-  virtual void OnWrite();
-
-  virtual void OnClose();
-
   virtual int DecodeMessage();
 
   virtual int EncodeMessage(ProtocolMessage* message);
@@ -49,6 +43,13 @@ class Channel : public Socket {
   std::string GetDiagnositicInfo() const;
 
   void DumpDisgnosticInfo(std::ostream& os) const;
+
+ protected:
+  virtual void OnRead();
+
+  virtual void OnWrite();
+
+  virtual void OnClose();
 
  private:
   LOGGER_CLASS_DECL(logger);

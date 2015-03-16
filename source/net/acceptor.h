@@ -21,11 +21,12 @@ class Acceptor : public Socket {
 
   virtual int Stop();
 
-  virtual void OnRead();
-
   inline const std::string& GetHost() const {return host_;}
 
   inline int GetPort() const {return port_;}
+
+ protected:
+  virtual void OnRead();
 
  private:
   LOGGER_CLASS_DECL(logger);

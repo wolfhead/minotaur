@@ -24,7 +24,7 @@ using namespace minotaur;
 using namespace minotaur::event;
 using namespace minotaur::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config(log4cplus::INFO_LOG_LEVEL);
+static minotaur::unittest::UnittestLogger logger_config(log4cplus::WARN_LOG_LEVEL);
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestEventLoop);

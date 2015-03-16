@@ -34,16 +34,6 @@ ServiceHandlerBase::ServiceHandlerBase(
 ServiceHandlerBase::~ServiceHandlerBase() {
 }
 
-int ServiceHandlerBase::Start() {
-  MI_LOG_INFO(logger, "ServiceHandlerBase::Start");
-  return 0;
-}
-
-int ServiceHandlerBase::Stop() {
-  MI_LOG_INFO(logger, "ServiceHandlerBase::Stop");
-  return 0;
-}
-
 void ServiceHandlerBase::Handle(const EventMessage& message) {
   switch (message.type_id) {
     case minotaur::MessageType::kIOMessageEvent:

@@ -7,7 +7,7 @@
 #include <iostream>
 #include "../../queue/ring_buffer.h"
 
-namespace minotaur {
+namespace minotaur { namespace event {
 
 template<typename T>
 class TimingWheel {
@@ -15,6 +15,7 @@ class TimingWheel {
   struct TimingNode {
     TimingNode* next;
     uint32_t ticks;
+    bool active;
     T data;
   };
 
@@ -33,51 +34,38 @@ class TimingWheel {
     BindNext(next);
   }
 
+  TimingWheel<T>* GetNext() {return next_;}
+
   void BindNext(TimingWheel<T>* next) {
     if (!next) return;
     next_ = next;
     next_->self_shift_ = self_shift_ + next_shift_;
   }
 
-  void AddNode(uint32_t ticks, TimingNode* node) {
-    if (ticks < slots_.Size()) {
-      slots_.At(current_slot_ + ticks) = 
-        LinkNode(slots_.At(current_slot_ + ticks), node);
-    } else {
-      if (next_) {
-        next_->AddNode((ticks - slots_.Size()) >> next_shift_, node);
-      } else {
-        assert(!"TimingWheel overflow");
-      }
-    }
+  void AddNode(TimingNode* node) {
+    AddNode(node->ticks, node);
   }
 
   TimingNode* Advance(uint32_t ticks) {
+    if (ticks == 0) {
+      return NULL;
+    }
+
     TimingNode* head = NULL;
     TimingNode* tail = NULL;
     TimingNode* slot_head = NULL;
 
-    uint64_t target_slot = current_slot_ + ticks;
-
-    while (current_slot_ != target_slot) {
-      slot_head = slots_.At(current_slot_);
-
-      if (slot_head) {
-        slots_.At(current_slot_) = NULL;
-        if (tail != NULL) {
-          tail->next = slot_head;
-          tail = GetTail(slot_head);
-        } else {
-          head = slot_head;
-          tail = GetTail(slot_head);
-        }
-      }
-
+    while (ticks--) {
       ++current_slot_;
       if (slots_.Index(current_slot_) == 0) {
-        PullNext();
+        PullNext(); 
       }
+
+      slot_head = slots_.At(current_slot_);
+      slots_.At(current_slot_) = NULL;
+      head = LinkList(&head, &tail, slot_head);
     }
+
     return head;
   }
 
@@ -102,17 +90,52 @@ class TimingWheel {
     return tail;
   }
 
+  static TimingNode* LinkList(TimingNode** head, TimingNode** tail, TimingNode* link_head) {
+    if (!link_head) {
+      return *head;
+    }
+    if (*tail == NULL) {
+      *head = link_head;
+      *tail = GetTail(link_head);
+    } else {
+      (*tail)->next = link_head;
+      *tail = GetTail(link_head);
+    }
+    return *head;
+  }
+
   static TimingNode* LinkNode(TimingNode* old_head, TimingNode* new_head) {
     new_head->next = old_head;
     return new_head;
   }
 
+  void AddNode(uint32_t ticks, TimingNode* node) {
+    if (ticks <= slots_.Size()) {
+      uint64_t tick_slot = current_slot_ + ticks;
+      slots_.At(tick_slot) = LinkNode(slots_.At(tick_slot), node);
+    } else {
+      if (next_) {
+        // remove the remain ticks from the node
+        // because every PullNext starts at offset 0
+        uint32_t remain_slot = (slots_.Size() - slots_.Index(current_slot_));
+        uint32_t offset = (ticks - remain_slot) & mask_;
+        uint32_t loop = (ticks + slots_.Index(current_slot_)) >> next_shift_;
+        node->ticks = (node->ticks & ~(mask_ << self_shift_)) | offset << self_shift_;
+        next_->AddNode(loop, node);
+      } else {
+        assert(!"TimingWheel overflow");
+      }
+    }
+  }
+
   void PullNext() {
     if (!next_) return;
     TimingNode* head = next_->Advance(1);
+
     while (head) {
       TimingNode* next = head->next;
-      AddNode(((head->ticks >> self_shift_) & mask_), head);
+      uint32_t ticks = (head->ticks >> self_shift_) & mask_;
+      AddNode(ticks, head);
       head = next;
     }
   }
@@ -125,6 +148,7 @@ class TimingWheel {
   TimingWheel<T>* next_;
 };
 
+} //namespace event
 } //namespace minotaur
 
 

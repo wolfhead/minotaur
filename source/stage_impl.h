@@ -5,7 +5,6 @@
  * @author Wolfhead
  */
 #include "stage.h"
-#include <sys/prctl.h>
 
 namespace minotaur {
 
@@ -84,16 +83,23 @@ void StageWorker<Handler>::Join() {
 
 template <typename Handler>
 void StageWorker<Handler>::Run() {
-  prctl(PR_SET_NAME, stage_name_.c_str());
+  uint32_t idle;
+
+  handler_->OnLoopStart();
 
   MessageType message;
   while (running_) {
+    handler_->OnPerLoop();
+
     if (!pri_queue_->Pop(&message)) {
-      if (!queue_->Pop(&message, 50)) {
+      if (!queue_->Pop(&message, 5)) {
+        ++idle;
+        handler_->OnIdle();
         continue;
       }
     }
 
+    idle = 0;
     handler_->Handle(message);
   } 
 }
@@ -111,8 +117,7 @@ Stage<HandlerFactory>::Stage(
     , queue_(NULL)
     , pri_queue_(NULL)
     , handler_(NULL) 
-    , worker_(NULL) 
-    , stage_name_("stage") {
+    , worker_(NULL) {
 }
 
 template <typename HandlerFactory>
@@ -235,7 +240,6 @@ int Stage<HandlerFactory>::BindHandler() {
 template <typename HandlerFactory>
 int Stage<HandlerFactory>::StartWorker() {
   for (size_t i = 0; i != worker_count_; ++i) {
-    worker_[i].SetStageName(stage_name_);
     if (0 != worker_[i].Start()) {
       return -1;
     }

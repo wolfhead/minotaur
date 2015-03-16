@@ -24,6 +24,8 @@ class Connector : public Socket {
 
   inline int GetPort() const {return port_;}
 
+ protected:
+
  private:
   LOGGER_CLASS_DECL(logger);
 

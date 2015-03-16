@@ -16,6 +16,8 @@ link_libraries(
 #${LIBUNWIND_LIBRARIES}
   pthread
   rt
+  -static-libstdc++ 
+  -static-libgcc
 )
 
 
@@ -50,6 +52,12 @@ add_executable(t_coroutine
 
 add_executable(t_timing_wheel
   t_timing_wheel.cpp)
+
+add_executable(t_event_timer
+  t_event_timer.cpp)
+
+add_executable(t_timer
+  t_timer.cpp)
 
 #add_executable(t_lf_static_list_pool
 #  t_lf_static_list_pool.cpp)

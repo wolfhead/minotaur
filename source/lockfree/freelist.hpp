@@ -234,7 +234,9 @@ class freelist {
       : block_allocator_(batch_count, sizeof(T)) {}
   freelist(uint32_t batch_count, uint32_t item_size)
       : block_allocator_(batch_count, std::max(item_size, (uint32_t)sizeof(T))) {}
+#ifdef MINOTAUR_MEM_CHECK
   ~freelist() {block_allocator_.print_stat<T>(std::cout);}
+#endif
     
   template<typename... Args>
   T* alloc(uint64_t* key, const Args&... args) {
