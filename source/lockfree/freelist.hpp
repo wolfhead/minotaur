@@ -133,6 +133,15 @@ class block_allocator {
     return node->data;
   } 
 
+  static bool valid_key(uint64_t key) {
+    return check_node(tagged_node_ptr(key));
+  }
+
+  static bool valid(uint8_t* p) {
+    tagged_node* node = (tagged_node*)((uint8_t*)p - sizeof(uint64_t));
+    return valid_key(node->next);
+  }
+
   template<typename T>
   void print_stat(std::ostream& os) {
     uint32_t alloc_count = 0;
@@ -256,7 +265,9 @@ class freelist {
   }
 
   bool destroy(T* p) {
-    __detail__::construct_traits<T>::destruct(p);
+    if (block_allocator::valid((uint8_t*)p)) {
+      __detail__::construct_traits<T>::destruct(p);
+    }
     return block_allocator_.dealloc((uint8_t*)p);
   }
 

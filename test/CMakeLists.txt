@@ -59,6 +59,12 @@ add_executable(t_event_timer
 add_executable(t_timer
   t_timer.cpp)
 
+add_executable(t_double_linked_list
+  t_double_linked_list.cpp)
+
+add_executable(t_io_descriptor_factory
+  t_io_descriptor_factory.cpp)
+
 #add_executable(t_lf_static_list_pool
 #  t_lf_static_list_pool.cpp)
 

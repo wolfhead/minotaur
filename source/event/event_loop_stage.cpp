@@ -40,9 +40,9 @@ int EventLoopStage::Stop() {
 }
 
 EventLoopNotifier& EventLoopStage::GetNotifier(int fd, void* data) {
-  if (fd == EventLoopNotifier::kDescriptorFD) { 
-  return event_loop_thread_[
-    IODescriptorFactory::GetVersion((uint64_t)data) % event_loop_thread_.size()]->GetNotifier();
+  if (fd == EventLoopNotifier::kDescriptorFD) {
+    return event_loop_thread_[
+      IODescriptorFactory::GetVersion((uint64_t)data) % event_loop_thread_.size()]->GetNotifier();
   }
   return event_loop_thread_[fd % event_loop_thread_.size()]->GetNotifier();
 }

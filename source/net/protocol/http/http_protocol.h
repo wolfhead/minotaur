@@ -11,7 +11,7 @@
 
 namespace minotaur {
 
-class HttpProtocolMessage;
+class HttpMessage;
 
 struct HttpProtocolData {
   HttpProtocolData() {
@@ -20,9 +20,11 @@ struct HttpProtocolData {
     on_header_value = false;
   }
 
+  ~HttpProtocolData();
+
   struct http_parser parser;
   std::list<ProtocolMessage*> messages;
-  HttpProtocolMessage* current; 
+  HttpMessage* current; 
   std::string field;
   std::string value;
   bool on_header_value;

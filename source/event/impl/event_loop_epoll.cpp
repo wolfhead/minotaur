@@ -61,7 +61,7 @@ int EventLoopEpoll::AddEvent(EventLoopData* el_data, int fd, uint32_t mask) {
   struct epoll_event ee;
 
   int op = el_data->fd_events[fd].mask == EventType::EV_NONE ?
-           EPOLL_CTL_ADD : EPOLL_CTL_ADD;
+           EPOLL_CTL_ADD : EPOLL_CTL_MOD;
 
   ee.events = 0;
   mask |= el_data->fd_events[fd].mask; /* Merge old events */

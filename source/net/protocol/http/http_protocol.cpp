@@ -17,7 +17,7 @@ static int OnMessageBegin(http_parser* parser) {
   if (protocol_data->current) {
     MessageFactory::Destroy(protocol_data->current);
   }
-  protocol_data->current = MessageFactory::Allocate<HttpProtocolMessage>();
+  protocol_data->current = MessageFactory::Allocate<HttpMessage>();
   return 0;
 }
 
@@ -86,6 +86,12 @@ static int OnMessageComplete(http_parser* parser) {
 
 } //namespace 
 
+HttpProtocolData::~HttpProtocolData() {
+  if (current) {
+    MessageFactory::Destroy(current);
+  }
+}
+
 struct http_parser_settings HttpProtocolData::parser_setting = {
   .on_message_begin = &OnMessageBegin,
   .on_url = &OnRequestUrl,
@@ -110,7 +116,7 @@ ProtocolMessage* HttpProtocol::Decode(
   if (parser_.messages.size()) {
     ProtocolMessage* message = parser_.messages.front();
     parser_.messages.pop_front();
-    *result = Protocol::kResultDecoed;
+    *result = Protocol::kResultDecoded;
     return message;
   } 
 
@@ -136,7 +142,7 @@ ProtocolMessage* HttpProtocol::Decode(
   if (parser_.messages.size()) {
     ProtocolMessage* message = parser_.messages.front();
     parser_.messages.pop_front();
-    *result = Protocol::kResultDecoed;
+    *result = Protocol::kResultDecoded;
     return message;
   } 
 
@@ -156,7 +162,7 @@ bool HttpProtocol::Encode(
     "\r\n"
     "pong";
 
-  HttpProtocolMessage* http_message = static_cast<HttpProtocolMessage*>(message);
+  HttpMessage* http_message = static_cast<HttpMessage*>(message);
 
   buffer->EnsureWrite(response.size());
   buffer->Write(response.data(), response.size());

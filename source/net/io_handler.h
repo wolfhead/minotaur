@@ -77,6 +77,10 @@ class IOHandler : public HandlerSkeleton {
 
   void HandleIOMessageEvent(const EventMessage& message);
 
+  void HandleIOActiveCloseEvent(const EventMessage& message);
+
+  void HandleIOMessageFailure(const EventMessage& message);
+
   IOService* io_service_;
   StageType* stage_;
   Timer timer_;

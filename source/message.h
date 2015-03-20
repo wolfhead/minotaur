@@ -17,9 +17,10 @@ class MessageType {
     kUnknownEvent = 0,
     kIOEvent,
     kIOMessageEvent,
-    kLineProtocolMessage,
-    kRapidProtocolMessage,
-    kHttpProtocolMessage,
+    kIOActiveCloseEvent,
+    kLineMessage,
+    kRapidMessage,
+    kHttpMessage,
   };
 
   static const char* ToString(int type) {
@@ -27,6 +28,7 @@ class MessageType {
       "unknown event",
       "io event",
       "io message event",
+      "io active close event",
       "line protocol message",
       "rapid protocol message",
       "Http protocol message",

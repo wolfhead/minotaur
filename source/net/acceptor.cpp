@@ -85,7 +85,7 @@ int Acceptor::Start() {
 }
 
 int Acceptor::Stop() {
-  assert(!"no implement");
+  RegisterClose(); 
   return -1;
 }
 
@@ -126,6 +126,11 @@ void Acceptor::OnRead() {
       channel->Destroy();
     }
   }
+}
+
+void Acceptor::OnClose() {
+  MI_LOG_INFO(logger, "Acceptor closed: " << host_ << ":" << port_);
+  IODescriptor::OnClose();
 }
 
 } //namespace minotaur

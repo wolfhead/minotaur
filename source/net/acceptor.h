@@ -28,6 +28,8 @@ class Acceptor : public Socket {
  protected:
   virtual void OnRead();
 
+  virtual void OnClose();
+
  private:
   LOGGER_CLASS_DECL(logger);
 

@@ -51,25 +51,55 @@ void ServiceHandlerBase::OnUnknownEvent(const EventMessage& message) {
 void ServiceHandlerBase::OnIOMessageEvent(const EventMessage& message) {
   ProtocolMessage* protocol_message = message.GetProtocolMessage();
   switch (protocol_message->type_id) {
-    case minotaur::MessageType::kLineProtocolMessage:
-      return OnLineProtocolMessage(
-          static_cast<LineProtocolMessage*>(protocol_message));
-    case minotaur::MessageType::kHttpProtocolMessage:
-      return OnHttpProtocolMessage(
-          static_cast<HttpProtocolMessage*>(protocol_message));
+    case minotaur::MessageType::kLineMessage:
+      return protocol_message->direction == ProtocolMessage::kIncomingRequest 
+          ? OnLineRequestMessage(static_cast<LineMessage*>(protocol_message))
+          : OnLineResponseMessage(static_cast<LineMessage*>(protocol_message));
+    case minotaur::MessageType::kHttpMessage:
+      return protocol_message->direction == ProtocolMessage::kIncomingRequest 
+          ? OnHttpRequestMessage(static_cast<HttpMessage*>(protocol_message))
+          : OnHttpResponseMessage(static_cast<HttpMessage*>(protocol_message));
+    case minotaur::MessageType::kRapidMessage:
+      return protocol_message->direction == ProtocolMessage::kIncomingRequest 
+          ? OnRapidRequestMessage(static_cast<RapidMessage*>(protocol_message))
+          : OnRapidResponseMessage(static_cast<RapidMessage*>(protocol_message));
     default:
       return OnUnknownProtocolMessage(protocol_message);
   }
 }
 
-void ServiceHandlerBase::OnLineProtocolMessage(
-    LineProtocolMessage* message) {
+void ServiceHandlerBase::OnLineRequestMessage(
+    LineMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }
 
-void ServiceHandlerBase::OnHttpProtocolMessage(
-    HttpProtocolMessage* message) {
+void ServiceHandlerBase::OnLineResponseMessage(
+    LineMessage* message) {
+  MI_LOG_WARN(logger, "not implement:" << message->type_id);
+  MessageFactory::Destroy(message);
+}
+
+void ServiceHandlerBase::OnHttpRequestMessage(
+    HttpMessage* message) {
+  MI_LOG_WARN(logger, "not implement:" << message->type_id);
+  MessageFactory::Destroy(message);
+}
+
+void ServiceHandlerBase::OnHttpResponseMessage(
+    HttpMessage* message) {
+  MI_LOG_WARN(logger, "not implement:" << message->type_id);
+  MessageFactory::Destroy(message);
+}
+
+void ServiceHandlerBase::OnRapidRequestMessage(
+    RapidMessage* message) {
+  MI_LOG_WARN(logger, "not implement:" << message->type_id);
+  MessageFactory::Destroy(message);
+}
+
+void ServiceHandlerBase::OnRapidResponseMessage(
+    RapidMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }

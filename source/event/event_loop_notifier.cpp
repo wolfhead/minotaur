@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include "event_loop.h"
 #include "../common/system_error.h"
+#include "../common/thread_id.h"
 #include "../net/socket_op.h"
 #include "../net/io_descriptor.h"
 #include "../net/io_descriptor_factory.h"
@@ -76,8 +77,7 @@ int EventLoopNotifier::Notify(int fd, uint32_t mask, FdEventProc* proc, void* da
     .proc = proc,
   };
 
-  uint32_t thread_id = GetThreadId();
-  if (thread_id == working_thread_id_) {
+  if (ThreadId::Get() == working_thread_id_) {
     return NotifyEventLoop(event_loop_, message);
   }
 
@@ -123,8 +123,8 @@ int EventLoopNotifier::RegisterReadWrite(
   return Notify(fd, NotifyMessage::ADD_READ_WRITE, proc, data); 
 }
 
-int EventLoopNotifier::RegisterClose(int fd) {
-  return Notify(fd, NotifyMessage::ADD_CLOSE, NULL, NULL);
+int EventLoopNotifier::RegisterClose(int fd, void* data) {
+  return Notify(fd, NotifyMessage::REGISTER_CLOSE, NULL, data);
 }
 
 int EventLoopNotifier::UnregisterRead(int fd) {
@@ -145,8 +145,6 @@ void EventLoopNotifier::EventLoopNotifierProc(
     int fd,
     void* data,
     uint32_t mask) {
-  LOG_TRACE(logger, "EventLoopNotifier::EventLoopNotifierProc start");
-
   uint64_t queue_count = 0;
   SocketOperation::Receive(fd, &queue_count, sizeof(uint64_t));
   MessageQueueType* queue = (MessageQueueType*)data;
@@ -161,8 +159,6 @@ void EventLoopNotifier::EventLoopNotifierProc(
 int EventLoopNotifier::NotifyEventLoop(
     EventLoop* event_loop, 
     const NotifyMessage& message) {
-  LOG_TRACE(logger, "EventLoopNotifier::NotifyEventLoop message:"
-      << message);
 
   IODescriptor* descriptor = NULL;
   if (message.fd == kDescriptorFD) {
@@ -174,10 +170,11 @@ int EventLoopNotifier::NotifyEventLoop(
       return -1;
     }
   }
+  
+  LOG_TRACE(logger, "EventLoopNotifier::NotifyEventLoop"
+      << ", message:" << message
+      << ", descriptor:" << *descriptor);
 
-
-  //TODO
-  //fix these in out
   switch (message.mask) {
     case NotifyMessage::ADD_READ:
       return event_loop->AddEvent(
@@ -205,6 +202,9 @@ int EventLoopNotifier::NotifyEventLoop(
       return event_loop->RemoveEvent(
           descriptor ? descriptor->GetOUT() : message.fd, 
           EventType::EV_WRITE);
+    case NotifyMessage::REGISTER_CLOSE:
+      event_loop->FireEvent(descriptor->GetIN(), EventType::EV_CLOSE);
+      return 0;
     default:
       LOG_WARN(logger, "EventLoopNotifier::NotifyEventLoop unknown mask:" << message.mask);
       break;

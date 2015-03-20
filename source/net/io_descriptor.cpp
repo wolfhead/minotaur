@@ -47,7 +47,7 @@ void IODescriptor::IODescriptorProc(
   MI_LOG_TRACE(logger, "IODescriptorProc called"
       << ", fd:" << fd
       << ", mask:" << mask
-      << ", descriptor_id" << desc->GetDescriptorId());
+      << ", descriptor_id:" << desc->GetDescriptorId());
 
   if (mask & event::EventType::EV_CLOSE) {
     MI_LOG_TRACE(logger, "IODescriptor::IODescriptorProc EV_CLOSE, " 
@@ -96,6 +96,11 @@ int IODescriptor::RegisterReadWrite() {
       (void*)GetDescriptorId());
 }
 
+int IODescriptor::RegisterClose() {
+  return GetIOService()->GetEventLoopStage()->RegisterClose(
+      event::EventLoopNotifier::kDescriptorFD, (void*)GetDescriptorId());
+}
+
 int IODescriptor::SendEventMessage(const EventMessage& message) {
   if (!GetIOService()->GetIOStage()->Send(message)) {
     MI_LOG_ERROR(logger, "Channel::SendEventMessage send fail, type:" 
@@ -106,13 +111,21 @@ int IODescriptor::SendEventMessage(const EventMessage& message) {
 }
 
 void IODescriptor::OnRead() {
+  MI_LOG_TRACE(logger, "IODescriptor::OnRead:" << *this);
 }
 
 void IODescriptor::OnWrite() {
+  MI_LOG_TRACE(logger, "IODescriptor::OnWrite:" << *this);
 }
 
 void IODescriptor::OnClose() {
+  MI_LOG_TRACE(logger, "IODescriptor::OnClose:" << *this);
   Close();
+}
+
+void IODescriptor::OnActiveClose() {
+  MI_LOG_TRACE(logger, "IODescriptor::OnActiveClose:" << *this);
+  RegisterClose();
 }
 
 void IODescriptor::Close() {

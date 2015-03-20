@@ -30,8 +30,8 @@ ProtocolMessage* LineProtocol::Decode(
   }
 
   buffer->Consume(end - begin + 1);
-  *result = Protocol::kResultDecoed;
-  return MessageFactory::Allocate<LineProtocolMessage>(
+  *result = Protocol::kResultDecoded;
+  return MessageFactory::Allocate<LineMessage>(
       std::string(begin, end - begin - 1));
 }
 
@@ -39,7 +39,7 @@ bool LineProtocol::Encode(
       IODescriptor* descriptor,
       IOBuffer* buffer,
       ProtocolMessage* message) {
-  LineProtocolMessage* line_message = static_cast<LineProtocolMessage*>(message);
+  LineMessage* line_message = static_cast<LineMessage*>(message);
   const std::string& body = line_message->body;
 
   char* begin = buffer->EnsureWrite(body.size() + 1);

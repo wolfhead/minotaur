@@ -5,7 +5,6 @@
  * @author Wolfhead
  */
 #include <unistd.h>
-#include <sys/syscall.h>
 #include "event_loop_data.h"
 #include "../common/logger.h"
 #include "../queue/sequencer.hpp"
@@ -21,7 +20,7 @@ struct NotifyMessage {
     ADD_READ = 1,
     ADD_WRITE = 2,
     ADD_READ_WRITE = 3,
-    ADD_CLOSE = 4,
+    REGISTER_CLOSE = 4,
     REMOVE_READ = 5,
     REMOVE_WRITE = 6,
   };
@@ -57,22 +56,13 @@ class EventLoopNotifier {
 
   int RegisterReadWrite(int fd, FdEventProc* proc, void* data);
 
-  int RegisterClose(int fd);
+  int RegisterClose(int fd, void* data);
 
   int UnregisterRead(int fd);
 
   int UnregisterWrite(int fd);
 
   int Process();
-
-  static inline uint32_t GetThreadId() {
-    #ifdef SYS_gettid
-      pid_t tid = syscall(SYS_gettid);
-      return tid;
-    #else
-      #error "SYS_gettid unavailable on this system"
-    #endif  
-  }
 
  private:
   typedef queue::MPSCQueue<

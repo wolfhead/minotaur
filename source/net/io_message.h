@@ -12,18 +12,37 @@ namespace minotaur {
 
 class ProtocolMessage : public MessageBase {
  public:
+  enum {
+    kIncomingRequest = 0,
+    kOutgoingRequest,
+    kIncomingResponse,
+    kOutgoingResponse,
+  };
+
+  enum {
+    kStatusOK = 0,
+    kInternalFailure,
+  };
 
   virtual void Dump(std::ostream& os) const;
 
-  uint64_t descriptor_id;
+  uint8_t status;
+  uint8_t direction;
+  uint16_t reserve;
   uint32_t sequence_id;
+  uint64_t descriptor_id;
+  uint64_t payload;
+  // for book-keeper
+  ProtocolMessage* next_;
+  ProtocolMessage* prev_;
+  uint64_t timestamp_;
 };
 
-class LineProtocolMessage : public ProtocolMessage {
+class LineMessage : public ProtocolMessage {
  public:
-  LineProtocolMessage(const std::string& body_)
+  LineMessage(const std::string& body_)
       : body(body_) {
-    type_id = MessageType::kLineProtocolMessage;
+    type_id = MessageType::kLineMessage;
   }
 
   virtual void Dump(std::ostream& os) const;
@@ -31,7 +50,7 @@ class LineProtocolMessage : public ProtocolMessage {
   std::string body;
 };
 
-class RapidProtocolMessage : public ProtocolMessage {
+class RapidMessage : public ProtocolMessage {
  public:
   enum {
     kDataType = 0,
@@ -40,16 +59,18 @@ class RapidProtocolMessage : public ProtocolMessage {
     kOneway = 3,
   };
 
-  RapidProtocolMessage() {
-    type_id = MessageType::kRapidProtocolMessage;
+  RapidMessage() {
+    type_id = MessageType::kRapidMessage;
   }
+
+  virtual void Dump(std::ostream& os) const;
 
   uint16_t cmd_id;
   uint32_t extra;
   std::string body;
 };
 
-class HttpProtocolMessage : public ProtocolMessage {
+class HttpMessage : public ProtocolMessage {
  public:
   enum {
     kMethodDelete = 0,
@@ -62,8 +83,8 @@ class HttpProtocolMessage : public ProtocolMessage {
     kHttpTypeBoth = 2,
   };
 
-  HttpProtocolMessage() {
-    type_id = MessageType::kHttpProtocolMessage;
+  HttpMessage() {
+    type_id = MessageType::kHttpMessage;
   }
 
   virtual void Dump(std::ostream& os) const;
@@ -81,8 +102,9 @@ class HttpProtocolMessage : public ProtocolMessage {
 };
 
 std::ostream& operator << (std::ostream& os, const ProtocolMessage& message);
-std::ostream& operator << (std::ostream& os, const LineProtocolMessage& message);
-std::ostream& operator << (std::ostream& os, const HttpProtocolMessage& message);
+std::ostream& operator << (std::ostream& os, const LineMessage& message);
+std::ostream& operator << (std::ostream& os, const RapidMessage& message);
+std::ostream& operator << (std::ostream& os, const HttpMessage& message);
 
 
 } //namespace minotaur

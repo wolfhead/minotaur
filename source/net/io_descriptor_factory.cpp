@@ -3,9 +3,10 @@
  * @author Wolfhead
  */
 #include "io_descriptor_factory.h"
-#include "channel.h"
 #include "acceptor.h"
-#include "connector.h"
+#include "channel.h"
+#include "client_channel.h"
+#include "socket_op.h"
 
 namespace minotaur {
 
@@ -15,7 +16,7 @@ struct io_descriptor_size {
   union {
     char channel_size[sizeof(Channel)];
     char acceptor_size[sizeof(Acceptor)];
-    char cnnector_size[sizeof(Connector)];
+    char cnnector_size[sizeof(ClientChannel)];
   } data;
   uint64_t padding;
 };
@@ -44,20 +45,27 @@ Channel* IODescriptorFactory::CreateChannel(
 }
 
 Acceptor* IODescriptorFactory::CreateAcceptor(
-    IOService* io_service,
-    const std::string& host, 
-    int port,
-    int protocol_type) {
+    IOService* io_service, 
+    const std::string& address) {
+  std::string ip;
+  int port = 0;
+  int protocol_type = 0;
+
+  if (0 != ParseAddress(address, &ip, &port, &protocol_type)) {
+    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateAcceptor ParseAddress fail"
+        << ", address:" << address);
+    return NULL;
+  }
+
   Protocol* protocol = protocol_factory_.Create(protocol_type);
   if (!protocol) {
-    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateAcceptor create protocol fail:"
-        << protocol_type);
+    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateAcceptor unknown protocol:" << protocol_type);
     return NULL;
   }
 
   uint64_t descriptor_id = 0;
   Acceptor* acceptor = freelist_.alloc_with<Acceptor>(
-      &descriptor_id, io_service, host, port);
+      &descriptor_id, io_service, ip, port);
   if (!acceptor) {
     return NULL;
   }
@@ -67,32 +75,71 @@ Acceptor* IODescriptorFactory::CreateAcceptor(
   return acceptor;  
 }
 
-Connector* IODescriptorFactory::CreateConnector(
+ClientChannel* IODescriptorFactory::CreateClientChannel(
     IOService* io_service,
-    const std::string& host, 
-    int port,
-    int protocol_type) {
+    const std::string& address,
+    uint32_t timeout_msec) {
+  std::string ip;
+  int port = 0;
+  int protocol_type = 0;
+
+  if (0 != ParseAddress(address, &ip, &port, &protocol_type)) {
+    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateClientChannel ParseAddress fail"
+        << ", address:" << address);
+    return NULL;
+  }
+
   Protocol* protocol = protocol_factory_.Create(protocol_type);
   if (!protocol) {
-    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateConnector create protocol fail:"
-        << protocol_type);
+    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateClientChannel unknown protocol:" << protocol_type);
     return NULL;
   }
 
   uint64_t descriptor_id = 0;
-  Connector* connector = freelist_.alloc_with<Connector>(
-      &descriptor_id, io_service, host, port);
-  if (!connector) {
+  ClientChannel* client_channel = freelist_.alloc_with<ClientChannel>(
+      &descriptor_id, io_service, timeout_msec);
+  if (!client_channel) {
     return NULL;
   }
 
-  connector->SetDescriptorId(descriptor_id);
-  connector->SetProtocol(protocol);
-  return connector;  
+  client_channel->SetIp(ip);
+  client_channel->SetPort(port);
+  client_channel->SetDescriptorId(descriptor_id);
+  client_channel->SetProtocol(protocol);
+  return client_channel;  
 }
 
 bool IODescriptorFactory::Destroy(IODescriptor* descriptor) {
   return freelist_.destroy(descriptor);
 }
+
+int IODescriptorFactory::ParseAddress(
+    const std::string& address, 
+    std::string* ip, 
+    int* port, 
+    int* protocol) {
+  char proto[64] = {0};
+  char host[256] = {0};
+  int count = sscanf(address.c_str(), " %[^:]://%[^:]:%d", proto, host, port);
+  if (count != 3) {
+    MI_LOG_ERROR(logger, "IODescriptorFactory::ParseAddress fail:" << address);
+    return -1;
+  }
+
+  ip->assign(SocketOperation::GetHostIP(host));
+  if (ip->empty()) {
+    MI_LOG_ERROR(logger, "IODescriptorFactory::ParseAddress unknown host:" << host);
+    return -1;
+  }
+
+  *protocol = ProtocolType::ToType(proto);
+  if (*protocol == ProtocolType::kUnknownProtocol) {
+    MI_LOG_ERROR(logger, "IODescriptorFactory::ParseAddress unknown protocol:" << proto);
+    return -1;
+  }
+
+  return 0;
+}
+
 
 } //namespace minotaur

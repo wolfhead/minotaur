@@ -6,15 +6,15 @@
  */
 #include "../common/logger.h"
 #include "../lockfree/freelist.hpp"
+#include "io_descriptor.h"
 #include "protocol/protocol_factory.h"
 
 namespace minotaur {
 
 class IOService;
-class IODescriptor;
 class Channel;
 class Acceptor;
-class Connector;
+class ClientChannel;
 
 class IODescriptorFactory {
  public:
@@ -22,22 +22,6 @@ class IODescriptorFactory {
     static IODescriptorFactory instance_;
     return instance_;
   }
-
-  Channel* CreateChannel(
-      IOService* io_service, 
-      int fd);
-
-  Acceptor* CreateAcceptor(
-      IOService* io_service,
-      const std::string& host, 
-      int port, 
-      int protocol_type);
-
-  Connector* CreateConnector(
-      IOService* io_service,
-      const std::string& host, 
-      int port, 
-      int protocol_type);
 
   static IODescriptor* GetIODescriptor(uint64_t descriptor_id) {
     return lockfree::freelist<IODescriptor>::get_key(descriptor_id);
@@ -48,12 +32,32 @@ class IODescriptorFactory {
         ::extract_tag(descriptor_id);
   }
 
+  static int ParseAddress(
+      const std::string& address, 
+      std::string* ip, 
+      int* port, 
+      int* protocol);
+
+  Channel* CreateChannel(
+      IOService* io_service, 
+      int fd);
+
+  Acceptor* CreateAcceptor(
+      IOService* io_service,
+      const std::string& address);
+
+  ClientChannel* CreateClientChannel(
+      IOService* io_service,
+      const std::string& address,
+      uint32_t timeout_msec);
+
   bool Destroy(IODescriptor* descriptor);
 
  private:
   IODescriptorFactory();
 
   LOGGER_CLASS_DECL(logger);
+
 
   lockfree::freelist<IODescriptor> freelist_;
   ProtocolFactory protocol_factory_;

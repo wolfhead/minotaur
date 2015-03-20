@@ -11,7 +11,7 @@
 #include <event/event_loop_stage.h>
 #include <net/socket_op.h>
 #include <net/acceptor.h>
-#include <net/connector.h>
+#include <net/client_channel.h>
 #include <net/io_handler.h>
 #include <common/system_error.h>
 #include <io_service.h>
@@ -24,8 +24,9 @@ using namespace minotaur;
 using namespace minotaur::event;
 using namespace minotaur::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config(log4cplus::WARN_LOG_LEVEL);
+static minotaur::unittest::UnittestLogger logger_config(log4cplus::TRACE_LOG_LEVEL);
 LOGGER_STATIC_DECL_IMPL(logger, "root");
+LOGGER_STATIC_DECL_IMPL(g_logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestEventLoop);
 
@@ -61,14 +62,46 @@ class TestServiceHandler : public ServiceHandlerBase {
       : ServiceHandlerBase(io_service, stage) {
   }
 
-  void OnHttpProtocolMessage(
-      HttpProtocolMessage* message) {
+  void OnHttpRequestMessage(HttpMessage* message) {
     GetIOService()->GetIOStage()->Send(
         EventMessage(
             minotaur::MessageType::kIOMessageEvent, 
             message->descriptor_id,
             (uint64_t)message));
   } 
+
+  void OnRapidRequestMessage(RapidMessage* message) {
+    LOG_INFO(g_logger, "OnRapidRequestMessage");
+
+    message->body = "response";
+
+    GetIOService()->GetIOStage()->Send(
+        EventMessage(
+            minotaur::MessageType::kIOMessageEvent, 
+            message->descriptor_id,
+            (uint64_t)message));
+  } 
+
+  void OnRapidResponseMessage(RapidMessage* message) {
+    LOG_INFO(g_logger, "OnRapidResponseMessage");
+  }
+
+  void OnLineRequestMessage(LineMessage* message) {
+    LOG_INFO(g_logger, "OnLineRequestMessage:" << message->body);
+
+    message->body = "response";
+
+    GetIOService()->GetIOStage()->Send(
+        EventMessage(
+            minotaur::MessageType::kIOMessageEvent, 
+            message->descriptor_id,
+            (uint64_t)message));
+  } 
+
+  void OnLineResponseMessage(LineMessage* message) {
+    LOG_INFO(g_logger, "OnLineResponseMessage");
+  }
+
 };
 
 
@@ -138,32 +171,45 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   BOOST_CHECK_EQUAL(ret, 0);
 
   Acceptor* http_acceptor = IODescriptorFactory::Instance()
-    .CreateAcceptor(
-        &io_service, "0.0.0.0", 
-        6600, ProtocolType::kHttpProtocol);
+    .CreateAcceptor(&io_service, "http://0.0.0.0:6600");
   ret = http_acceptor->Start();
   BOOST_CHECK_EQUAL(0, ret);
   
   Acceptor* line_acceptor = IODescriptorFactory::Instance()
-    .CreateAcceptor(
-        &io_service, "0.0.0.0", 
-        6601, ProtocolType::kLineProtocol);
+    .CreateAcceptor(&io_service, "line://0.0.0.0:6601");
   ret = line_acceptor->Start();
   BOOST_CHECK_EQUAL(0, ret);
 
   Acceptor* rapid_acceptor = IODescriptorFactory::Instance()
-    .CreateAcceptor(
-        &io_service, "0.0.0.0", 
-        6602, ProtocolType::kRapidProtocol);
+    .CreateAcceptor(&io_service, "rapid://0.0.0.0:6602");
+
   ret = rapid_acceptor->Start();
   BOOST_CHECK_EQUAL(0, ret);
 
-  Connector* rapid_connector = IODescriptorFactory::Instance()
-    .CreateConnector(
-        &io_service, "127.0.0.1",
-        6603, ProtocolType::kRapidProtocol);
+  ClientChannel* rapid_connector = IODescriptorFactory::Instance()
+    .CreateClientChannel(&io_service, "rapid://localhost:6602", 2000);
   ret = rapid_connector->Start();
+
+  ClientChannel* line_connector = IODescriptorFactory::Instance()
+    .CreateClientChannel(&io_service, "line://localhost:6601", 2000);
+  ret = line_connector->Start();
+
   BOOST_CHECK_EQUAL(0, ret);
+
+  int i = 1;
+  while (i--) {
+    sleep(2);
+
+    RapidMessage* message = MessageFactory::Allocate<RapidMessage>();
+
+    io_service.GetIOStage()->Send(
+        EventMessage(
+            minotaur::MessageType::kIOMessageEvent, 
+            rapid_connector->GetDescriptorId(),
+            (uint64_t)message));
+
+    sleep(2);
+  }
 
   ret = io_service.Run();
   BOOST_CHECK_EQUAL(0, ret);
@@ -171,6 +217,7 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   IODescriptorFactory::Instance().Destroy(http_acceptor);
   IODescriptorFactory::Instance().Destroy(line_acceptor);
   IODescriptorFactory::Instance().Destroy(rapid_acceptor);
+  IODescriptorFactory::Instance().Destroy(line_connector);
   IODescriptorFactory::Instance().Destroy(rapid_connector);
 }
 

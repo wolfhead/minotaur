@@ -30,6 +30,7 @@ class EventLoop {
     @return number of events processed if >= 0, system error if < 0 
   */
   int ProcessEvent(uint32_t timeout);
+  void FireEvent(int fd, uint32_t mask);
 
   const char * GetImplement() const;
 

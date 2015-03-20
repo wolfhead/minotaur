@@ -13,6 +13,8 @@ class ProtocolMessage;
 
 class Channel : public Socket {
  public:
+  friend IOHandler;
+
   Channel(IOService* io_service, int fd);
 
   ~Channel();
@@ -20,10 +22,6 @@ class Channel : public Socket {
   virtual int Start();
 
   virtual int Stop();
-
-  virtual int DecodeMessage();
-
-  virtual int EncodeMessage(ProtocolMessage* message);
 
   inline void SetIp(const std::string& ip) {
     ip_ = ip;
@@ -51,13 +49,19 @@ class Channel : public Socket {
 
   virtual void OnClose();
 
- private:
-  LOGGER_CLASS_DECL(logger);
+  virtual int DecodeMessage();
+
+  virtual int EncodeMessage(ProtocolMessage* message);
+
+  virtual void OnDecodeMessage(ProtocolMessage* message);
 
   std::string ip_;
   int port_;
   IOBuffer read_buffer_;
   IOBuffer write_buffer_;
+
+ private:
+  LOGGER_CLASS_DECL(logger);
 };
 
 } //namespace minotaur

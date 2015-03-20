@@ -67,9 +67,17 @@ class ServiceHandlerBase : public HandlerSkeleton {
 
   virtual void OnIOMessageEvent(const EventMessage& message);
 
-  virtual void OnLineProtocolMessage(LineProtocolMessage* message);
+  virtual void OnLineRequestMessage(LineMessage* message);
 
-  virtual void OnHttpProtocolMessage(HttpProtocolMessage* message);
+  virtual void OnLineResponseMessage(LineMessage* message);
+
+  virtual void OnHttpRequestMessage(HttpMessage* message);
+
+  virtual void OnHttpResponseMessage(HttpMessage* message);
+
+  virtual void OnRapidRequestMessage(RapidMessage* message);
+
+  virtual void OnRapidResponseMessage(RapidMessage* message);
 
   virtual void OnUnknownProtocolMessage(ProtocolMessage* message);
 

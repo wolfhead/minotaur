@@ -10,9 +10,11 @@
 #include <errno.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -129,6 +131,12 @@ class SocketOperation {
 
   inline static int ShutDownBoth(int fd) {
     return shutdown(fd, SHUT_RDWR);
+  }
+
+  inline static std::string GetHostIP(const std::string& host) {
+    hostent * record = gethostbyname(host.c_str());
+    if (!record) return "";
+    return inet_ntoa(*((in_addr*)record->h_addr));
   }
 };
 

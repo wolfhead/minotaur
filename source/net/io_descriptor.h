@@ -42,6 +42,7 @@ class IODescriptor : public boost::noncopyable {
 
   inline bool GetUseIOStage() const {return use_io_stage_;}
 
+  // Start and Stop can be called from any thread
   virtual int Start() = 0;
 
   virtual int Stop() = 0;
@@ -56,14 +57,20 @@ class IODescriptor : public boost::noncopyable {
   // release resource
   virtual void Close();
 
+  // ##################################################
   // these functions might be called in either
   // EventLoopStage or IOStage
   // depending on GetUseIOStage
   virtual void OnRead();
 
   virtual void OnWrite();
-  // 
+  
   virtual void OnClose();
+
+  // OnActiveClose is called when application actively
+  // try to close a discriptor
+  virtual void OnActiveClose();
+  // ##################################################
 
   int RegisterRead();
 

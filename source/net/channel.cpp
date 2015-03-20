@@ -80,12 +80,17 @@ void Channel::OnRead() {
     read_buffer_.Produce(ret);
   }
 
-  DecodeMessage();
+  if (0 != DecodeMessage()) {
+    SocketOperation::ShutDownBoth(GetFD());
+  }
 }
 
 void Channel::OnWrite() {
   uint32_t data_size = 0;
   int ret = 0;
+
+  LOG_TRACE(logger, "Channel::OnWrite size:" << write_buffer_.GetReadSize());
+
 
   while ((data_size = write_buffer_.GetReadSize()) != 0) {
     ret = SocketOperation::Send(GetFD(), write_buffer_.GetRead(), data_size);
@@ -102,42 +107,32 @@ void Channel::OnWrite() {
       break;
     }
     write_buffer_.Consume(ret);
-
-    //if (!write_buffer_.GetReadSize()) {
-    //  SocketOperation::ShutDownWrite(GetFD());
-    //}
   }
 }
 
-int Channel::DecodeMessage() {
-  int result = Protocol::kResultDecoed;
-  while (result == Protocol::kResultDecoed) {
-    ProtocolMessage* message = GetProtocol()->Decode(this, &read_buffer_, &result);
+void Channel::OnClose() {
+  Destroy();
+}
 
+int Channel::DecodeMessage() {
+  int result = Protocol::kResultDecoded;
+  while (result == Protocol::kResultDecoded) {
+    ProtocolMessage* message = GetProtocol()->Decode(this, &read_buffer_, &result);
     if (!message) {
       continue;
     }
 
-    message->descriptor_id = GetDescriptorId();
+    OnDecodeMessage(message);
+  }
 
-    if (!GetIOService()->GetServiceStage()->Send(
-          EventMessage(
-            MessageType::kIOMessageEvent, 
-            GetDescriptorId(),
-            (uint64_t)message))) {
-      MI_LOG_WARN(logger, "Send message fail");
-    }
+  if (result == Protocol::kResultFail) {
+    return -1;
   }
 
   return 0;
 }
 
 int Channel::EncodeMessage(ProtocolMessage* message) {
-  if (!message) {
-    MI_LOG_ERROR(logger, "Channel::EncodeMessage empty message");
-    return -1;    
-  }
-
   if (!GetProtocol()->Encode(this, &write_buffer_, message)) {
     MI_LOG_ERROR(logger, "Channel::EncodeMessage fail");
     return -1;
@@ -147,8 +142,22 @@ int Channel::EncodeMessage(ProtocolMessage* message) {
   return 0;
 }
 
-void Channel::OnClose() {
-  Destroy();
+void Channel::OnDecodeMessage(ProtocolMessage* message) {
+  message->status = ProtocolMessage::kStatusOK;
+  message->direction = ProtocolMessage::kIncomingRequest;
+  message->reserve = 0;
+  message->descriptor_id = GetDescriptorId();
+  message->payload = 0;
+
+  if (!GetIOService()->GetServiceStage()->Send(
+        EventMessage(
+          MessageType::kIOMessageEvent, 
+          GetDescriptorId(),
+          (uint64_t)message))) {
+    MI_LOG_WARN(logger, "Channel::DecodeMessage Send message fail");
+    MessageFactory::Destroy(message);
+  }
+
 }
 
 } //namespace minotaur

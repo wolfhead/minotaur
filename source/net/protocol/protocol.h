@@ -16,7 +16,7 @@ class Protocol {
  public:
   enum {
     kResultContinue = 0,
-    kResultDecoed = 1,
+    kResultDecoded = 1,
     kResultFail = 2,
   };
 

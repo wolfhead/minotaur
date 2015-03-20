@@ -115,6 +115,16 @@ int EventLoop::ProcessEvent(uint32_t timeout) {
   return ret;
 }
 
+void EventLoop::FireEvent(int fd, uint32_t mask) {
+  FdEvent* file_event = &data_.fd_events[fd];
+  if (!file_event->proc) {
+    MI_LOG_ERROR(logger, "EventLoop::FireEvent fd not set:" << fd);
+    return;
+  }
+
+  file_event->proc(this, fd, file_event->client_data, mask);
+}
+
 const char* EventLoop::GetImplement() const {
   return EventLoopImpl::GetImplement();
 }

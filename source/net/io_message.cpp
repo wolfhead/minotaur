@@ -8,32 +8,51 @@
 namespace minotaur {
 
 ///////////////////////////////////////////////////////////////////////
-// LineMessage
+// ProtocolMessage
 void ProtocolMessage::Dump(std::ostream& os) const {
   os << "{\"type\": \"ProtocolMessage\""
      << ", \"type_id\": " << (int)type_id
      << ", \"descriptor_id\": " << descriptor_id
+     << ", \"status\": " << status
+     << ", \"direction\": " << direction
+     << ", \"reserve\": " << reserve
      << ", \"sequence_id\": " << sequence_id
+     << ", \"descriptor_id\": " << descriptor_id
+     << ", \"payload\": " << payload
+     << ", \"next_\": " << next_
+     << ", \"prev_\": " << prev_
+     << ", \"timestamp_\": " << timestamp_
      << "}";
 }
 
 
 ///////////////////////////////////////////////////////////////////////
 // LineMessage
-void LineProtocolMessage::Dump(std::ostream& os) const {
-  os << "{\"type\": \"LineProtocolMessage\""
+void LineMessage::Dump(std::ostream& os) const {
+  os << "{\"type\": \"LineMessage\""
      << ", \"type_id\": " << (int)type_id
      << ", \"descriptor_id\": " << descriptor_id
      << ", \"body\": \"" << body << "\""
      << "}";
 }
 
+///////////////////////////////////////////////////////////////////////
+// RapidMessage
+void RapidMessage::Dump(std::ostream& os) const {
+  os << "{\"type\": \"RapidMessage\""
+     << ", \"type_id\": " << (int)type_id
+     << ", \"descriptor_id\": " << descriptor_id
+     << ", \"cmd_id\": " << cmd_id
+     << ", \"extra\": " << extra
+     << ", \"body\": \"" << body << "\""
+     << "}";
+}
 
 
 ///////////////////////////////////////////////////////////////////////
 // HttpMessage
-void HttpProtocolMessage::Dump(std::ostream& os) const {
-  os << "{\"type\": \"HttpProtocolMessage\""
+void HttpMessage::Dump(std::ostream& os) const {
+  os << "{\"type\": \"HttpMessage\""
      << ", \"type_id\": " << (int)type_id
      << ", \"descriptor_id\": " << descriptor_id
      << ", \"http_major\": " << http_major
@@ -57,12 +76,17 @@ std::ostream& operator << (std::ostream& os, const ProtocolMessage& message) {
   return os;
 }
 
-std::ostream& operator << (std::ostream& os, const LineProtocolMessage& message) {
+std::ostream& operator << (std::ostream& os, const LineMessage& message) {
   message.Dump(os);
   return os;
 }
 
-std::ostream& operator << (std::ostream& os, const HttpProtocolMessage& message) {
+std::ostream& operator << (std::ostream& os, const RapidMessage& message) {
+  message.Dump(os);
+  return os;
+}
+
+std::ostream& operator << (std::ostream& os, const HttpMessage& message) {
   message.Dump(os);
   return os;
 }

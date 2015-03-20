@@ -40,7 +40,7 @@ ProtocolMessage* RapidProtocol::Decode(
     return NULL;
   }
 
-  RapidProtocolMessage* message = MessageFactory::Allocate<RapidProtocolMessage>();
+  RapidMessage* message = MessageFactory::Allocate<RapidMessage>();
 
   message->sequence_id = header->seqid;
   message->cmd_id = header->cmdid;
@@ -50,7 +50,7 @@ ProtocolMessage* RapidProtocol::Decode(
       header->size - sizeof(RapidHeader));
   
   buffer->Consume(header->size);
-  *result = Protocol::kResultDecoed;
+  *result = Protocol::kResultDecoded;
   return message;
 }
 
@@ -58,8 +58,8 @@ bool RapidProtocol::Encode(
       IODescriptor* descriptor,
       IOBuffer* buffer,
       ProtocolMessage* message) {
-  RapidProtocolMessage* rapid_message = 
-    static_cast<RapidProtocolMessage*>(message);
+  RapidMessage* rapid_message = 
+    static_cast<RapidMessage*>(message);
 
   uint32_t package_size = 
       sizeof(RapidHeader) + rapid_message->body.size();
@@ -67,7 +67,7 @@ bool RapidProtocol::Encode(
   RapidHeader header = {
     .size = package_size,
     .seqid = rapid_message->sequence_id,
-    .type = RapidProtocolMessage::kDataType,
+    .type = RapidMessage::kDataType,
     .version = 0,
     .cmdid = rapid_message->cmd_id,
     .extra = rapid_message->extra,

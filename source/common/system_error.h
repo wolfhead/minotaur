@@ -20,16 +20,25 @@ class SystemError {
     return errno; 
   }
 
-  //TODO
-  //refactoring later with optimization
   inline static std::string ToString() {
-    char buffer[512];
+    static thread_local char buffer[512];
     return strerror_r(errno, buffer, 512);
+  }
+
+  inline static std::string ToString(int code) {
+    static thread_local char buffer[512];
+    return strerror_r(code, buffer, 512);
   }
 
   inline static std::string FormatMessage() {
     std::ostringstream oss;
     oss << "[" << Get() << "] " << ToString();
+    return oss.str();
+  }  
+
+  inline static std::string FormatMessage(int code) {
+    std::ostringstream oss;
+    oss << "[" << code << "] " << ToString(code);
     return oss.str();
   }  
 };

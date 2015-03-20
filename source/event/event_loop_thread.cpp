@@ -6,6 +6,7 @@
 #include <sys/prctl.h>
 #include <boost/bind.hpp>
 #include "../common/system_error.h"
+#include "../common/thread_id.h"
 
 namespace minotaur { namespace event { 
 
@@ -61,7 +62,7 @@ int EventLoopThread::Stop() {
 void EventLoopThread::Run() {
   LOG_INFO(logger, "EventLoopThread::Run Start");
   prctl(PR_SET_NAME, "event_loop");
-  event_loop_notifier_.SetWorkingThreadId(EventLoopNotifier::GetThreadId());
+  event_loop_notifier_.SetWorkingThreadId(ThreadId::Get());
 
   while (running_) {
     if (event_loop_.ProcessEvent(1000) < 0) {
