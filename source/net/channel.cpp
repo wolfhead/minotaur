@@ -145,7 +145,7 @@ int Channel::EncodeMessage(ProtocolMessage* message) {
 void Channel::OnDecodeMessage(ProtocolMessage* message) {
   message->status = ProtocolMessage::kStatusOK;
   message->direction = ProtocolMessage::kIncomingRequest;
-  message->reserve = 0;
+  message->handler_id = Handler::kUnspecifiedId;
   message->descriptor_id = GetDescriptorId();
   message->payload = 0;
 

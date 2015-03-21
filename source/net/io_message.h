@@ -28,7 +28,7 @@ class ProtocolMessage : public MessageBase {
 
   uint8_t status;
   uint8_t direction;
-  uint16_t reserve;
+  uint16_t handler_id;
   uint32_t sequence_id;
   uint64_t descriptor_id;
   uint64_t payload;

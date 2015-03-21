@@ -3,38 +3,31 @@
  * @author Wolfhead
  */
 #include "service_handler.h"
+#include <sys/prctl.h>
 #include "../net/io_descriptor.h"
 #include "../net/io_descriptor_factory.h"
 
 namespace minotaur {
 
-LOGGER_CLASS_IMPL_NAME(logger, ServiceHandlerBase, "ServiceHandlerBase");
+LOGGER_CLASS_IMPL_NAME(logger, ServiceHandler, "ServiceHandlerBase");
 
-uint32_t ServiceHandlerBase::HashMessage(
-    const EventMessage& message, 
-    uint32_t worker_count) {
-  IODescriptor* descriptor = 
-      IODescriptorFactory::GetIODescriptor(message.descriptor_id);
-  if (descriptor) {
-    return descriptor->GetIN() % worker_count;
-  } else {
-    MI_LOG_ERROR(logger, "ServiceHandlerBase::HashMessage descriptor not found:"
-        << message);
-    return (message.descriptor_id) % worker_count; 
+ServiceHandler::ServiceHandler(IOService* io_service) {
+  SetIOService(io_service);
+}
+
+void ServiceHandler::Run(StageData* data) {
+  prctl(PR_SET_NAME, "service_handler");
+
+  EventMessage message;
+  while (data->running) {
+    if (!data->queue->Pop(&message, 5)) {
+      continue;
+    }
+    Handle(message);    
   }
 }
 
-ServiceHandlerBase::ServiceHandlerBase(
-    IOService* io_service, 
-    StageType* stage)
-    : io_service_(io_service)
-    , stage_(stage) {
-}
-
-ServiceHandlerBase::~ServiceHandlerBase() {
-}
-
-void ServiceHandlerBase::Handle(const EventMessage& message) {
+void ServiceHandler::Handle(const EventMessage& message) {
   switch (message.type_id) {
     case minotaur::MessageType::kIOMessageEvent:
       return OnIOMessageEvent(message);
@@ -43,12 +36,12 @@ void ServiceHandlerBase::Handle(const EventMessage& message) {
   }
 }
 
-void ServiceHandlerBase::OnUnknownEvent(const EventMessage& message) {
+void ServiceHandler::OnUnknownEvent(const EventMessage& message) {
   MI_LOG_WARN(logger, "unknown event:" << message.type_id);
   message.Destroy();
 }
 
-void ServiceHandlerBase::OnIOMessageEvent(const EventMessage& message) {
+void ServiceHandler::OnIOMessageEvent(const EventMessage& message) {
   ProtocolMessage* protocol_message = message.GetProtocolMessage();
   switch (protocol_message->type_id) {
     case minotaur::MessageType::kLineMessage:
@@ -68,46 +61,50 @@ void ServiceHandlerBase::OnIOMessageEvent(const EventMessage& message) {
   }
 }
 
-void ServiceHandlerBase::OnLineRequestMessage(
+void ServiceHandler::OnLineRequestMessage(
     LineMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }
 
-void ServiceHandlerBase::OnLineResponseMessage(
+void ServiceHandler::OnLineResponseMessage(
     LineMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }
 
-void ServiceHandlerBase::OnHttpRequestMessage(
+void ServiceHandler::OnHttpRequestMessage(
     HttpMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }
 
-void ServiceHandlerBase::OnHttpResponseMessage(
+void ServiceHandler::OnHttpResponseMessage(
     HttpMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }
 
-void ServiceHandlerBase::OnRapidRequestMessage(
+void ServiceHandler::OnRapidRequestMessage(
     RapidMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }
 
-void ServiceHandlerBase::OnRapidResponseMessage(
+void ServiceHandler::OnRapidResponseMessage(
     RapidMessage* message) {
   MI_LOG_WARN(logger, "not implement:" << message->type_id);
   MessageFactory::Destroy(message);
 }
 
-void ServiceHandlerBase::OnUnknownProtocolMessage(
+void ServiceHandler::OnUnknownProtocolMessage(
     ProtocolMessage* message) {
   MI_LOG_WARN(logger, "unknown protocol:" << *message);
   MessageFactory::Destroy(message);
+}
+
+ServiceHandler* ServiceHandler::Clone() {
+  return new ServiceHandler(GetIOService()); 
 }
 
 } //namespace minotaur

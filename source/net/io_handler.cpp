@@ -16,25 +16,12 @@ LOGGER_CLASS_IMPL_NAME(logger, IOHandler, "net.io_handler");
 thread_local IOHandler* IOHandler::current_io_handler_ = NULL;
 
 
-uint32_t IOHandler::HashMessage(
-    const EventMessage& message, 
-    uint32_t worker_count) {
-  return IODescriptorFactory::GetVersion(message.descriptor_id) % worker_count;
+IOHandler::IOHandler(IOService* io_service)
+    : timer_(5, 1000 * 60 * 60){
+  SetIOService(io_service);
 }
 
-IOHandler::IOHandler(IOService* io_service, StageType* stage)
-    : io_service_(io_service)
-    , stage_(stage)
-    , timer_(5, 1000 * 60 * 60){
-}
-
-
-void IOHandler::OnLoopStart() {
-  prctl(PR_SET_NAME, "io_handler");
-  current_io_handler_ = this;
-}
-
-void IOHandler::OnPerLoop() {
+void IOHandler::ProcessTimer() {
   Timer::NodeType* timer_head = timer_.ProcessTimer();
   Timer::NodeType* current = timer_head;
   Timer::NodeType* next = NULL;
@@ -50,8 +37,18 @@ void IOHandler::OnPerLoop() {
   }
 }
 
-void IOHandler::OnIdle() {
-  //LOG_TRACE(logger, "IOHandler::OnIdle");
+void IOHandler::Run(StageData* data) {
+  prctl(PR_SET_NAME, "io_handler");
+  current_io_handler_ = this;
+
+  EventMessage message;
+  while (data->running) {
+    ProcessTimer();
+    if (!data->queue->Pop(&message, 5)) {
+      continue;
+    }
+    Handle(message);    
+  }
 }
 
 void IOHandler::Handle(const EventMessage& message) {
@@ -174,12 +171,8 @@ void IOHandler::HandleIOMessageFailure(const EventMessage& message) {
   }
 }
 
-IOHandlerFactory::IOHandlerFactory(IOService* io_service) 
-    : io_service_(io_service) {
-}
-
-IOHandler* IOHandlerFactory::Create(StageType* stage) {
-  return new IOHandler(io_service_, stage);
+IOHandler* IOHandler::Clone() {
+  return new IOHandler(GetIOService());
 }
 
 

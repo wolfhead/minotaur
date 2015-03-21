@@ -17,19 +17,9 @@ BOOST_AUTO_TEST_SUITE(TestStage);
 
 class DummyHandler : public HandlerSkeleton {
  public:
-  typedef DummyHandler self;
-  typedef minotaur::Stage<self> StageType;
-  typedef int MessageType;
-  typedef self Handler;
 
-
-  static const bool share_handler = true;
-  static const bool share_queue = true;
-
-  DummyHandler(StageType* stage) : stage_(stage) {
-  }
-
-  static uint32_t HashMessage(const MessageType& message, uint32_t worker_count) {
+  static uint32_t HashMessage(const EventMessage& message, uint32_t worker_count) {
+    static 
     return 0;
   } 
 
@@ -121,7 +111,7 @@ void InputLatency(Stage<LatencyHandler>* stage, uint32_t count) {
 
 
 BOOST_AUTO_TEST_CASE(testSharedStage) {
-  Stage<DummyHandler> test_stage(new DummyHandler(NULL), 4, 1024 * 1024);
+  Stage<DummyHandler> test_stage(new DummyHandler(), 4, 1024 * 1024);
   int ret = 0;
 
   ret = test_stage.Start();
@@ -134,7 +124,7 @@ BOOST_AUTO_TEST_CASE(testSharedStage) {
 }
 
 BOOST_AUTO_TEST_CASE(testOwnStage) {
-  Stage<LatencyHandler> test_stage(new LatencyHandler(NULL), 4, 1024 * 1024);
+  Stage<LatencyHandler> test_stage(new LatencyHandler(), 4, 1024 * 1024);
   int ret = 0;
 
   ret = test_stage.Start();
@@ -147,7 +137,7 @@ BOOST_AUTO_TEST_CASE(testOwnStage) {
 }
 
 BOOST_AUTO_TEST_CASE(testOwnStageLatency) {
-  Stage<LatencyHandler> test_stage(new LatencyHandler(NULL), 4, 1024 * 1024);
+  Stage<LatencyHandler> test_stage(new LatencyHandler(), 4, 1024 * 1024);
   int ret = 0;
 
   ret = test_stage.Start();

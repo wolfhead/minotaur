@@ -23,8 +23,9 @@ add_subdirectory(coroutine/libcoro)
 set(MINOTAUR_SOURCE
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h
   ${MINOTAUR_EVENT_SOURCE}
-  io_service.cpp
   message.cpp
+  handler.cpp
+  io_service.cpp
   event/event_loop.cpp
   event/event_loop_data.cpp
   event/event_loop_notifier.cpp

@@ -14,8 +14,8 @@ class EventLoopStage;
 } //namespace event
 
 class Channel;
-class IOHandlerFactory;
-class ServiceHandlerFactory;
+class IOHandler;
+class ServiceHandler;
 
 template<typename T>
 class Stage;
@@ -30,17 +30,18 @@ struct IOServiceConfig {
   uint8_t service_worker;
   uint32_t service_queue_size;
 
-  ServiceHandlerFactory* service_handler_factory;
+  ServiceHandler* service_handler_prototype;
 };
 
 class IOService {
  public:
-  typedef Stage<IOHandlerFactory> IOStage;
-  typedef Stage<ServiceHandlerFactory> ServiceStage;
+  typedef Stage<IOHandler> IOStage;
+  typedef Stage<ServiceHandler> ServiceStage;
 
-  IOService(const IOServiceConfig& config);
+  IOService();
   ~IOService();
 
+  int Init(const IOServiceConfig& config);
   int Start();
   int Stop();
   int Run();

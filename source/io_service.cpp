@@ -15,23 +15,7 @@ namespace minotaur {
 LOGGER_CLASS_IMPL_NAME(logger, IOService, "IOService");
 volatile IOService* IOService::current_ = NULL;
 
-IOService::IOService(const IOServiceConfig& config) 
-    : io_service_config_(config)
-    , event_loop_stage_(
-        new event::EventLoopStage(
-          config.event_loop_worker, 
-          config.fd_count))
-    , io_stage_(
-        new IOStage(
-          new IOHandlerFactory(this), 
-          config.io_worker, 
-          config.io_queue_size)) 
-    , service_stage_(
-        new ServiceStage(
-          config.service_handler_factory->BindIOService(this),
-          config.service_worker,
-          config.service_queue_size)) {
-  current_ = this;
+IOService::IOService() { 
 }
 
 IOService::~IOService() {
@@ -39,6 +23,26 @@ IOService::~IOService() {
   delete io_stage_;
   delete event_loop_stage_;
   current_ = NULL;
+}
+
+int IOService::Init(const IOServiceConfig& config) {
+  io_service_config_ = config;
+  event_loop_stage_ = 
+    new event::EventLoopStage(
+          config.event_loop_worker, 
+          config.fd_count);
+  io_stage_ = 
+    new IOStage(
+          new IOHandler(this), 
+          config.io_worker, 
+          config.io_queue_size);
+  service_stage_ = 
+    new ServiceStage(
+          config.service_handler_prototype,
+          config.service_worker,
+          config.service_queue_size);
+  current_ = this;
+  return 0;
 }
 
 int IOService::Start() {
@@ -61,6 +65,8 @@ int IOService::Start() {
 }
 
 int IOService::Run() {
+  MI_LOG_INFO(logger, "IOService::Run");
+
   service_stage_->Wait();
 
   io_stage_->Stop();

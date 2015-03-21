@@ -141,7 +141,7 @@ void ClientChannel::OnDecodeMessage(ProtocolMessage* message) {
 
   message->status = ProtocolMessage::kStatusOK;
   message->direction = ProtocolMessage::kIncomingResponse;
-  message->reserve = keeper_message->reserve;
+  message->handler_id = keeper_message->handler_id;
   message->sequence_id = keeper_message->sequence_id;
   message->descriptor_id = GetDescriptorId();
   message->payload = keeper_message->payload;

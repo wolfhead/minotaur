@@ -24,45 +24,19 @@ using namespace minotaur;
 using namespace minotaur::event;
 using namespace minotaur::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config(log4cplus::TRACE_LOG_LEVEL);
+static minotaur::unittest::UnittestLogger logger_config(log4cplus::INFO_LOG_LEVEL);
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 LOGGER_STATIC_DECL_IMPL(g_logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestEventLoop);
 
-void FileEventProc(EventLoop *eventLoop, int fd, void *clientData, uint32_t mask) {
-  std::cout << "EventProc ->" << std::endl;
-  char buffer[1024] = {0};
-  std::string result;
-
-  return;
-
-  if (mask & EventType::EV_READ) {
-    //while (1) {
-      int got = read(fd, buffer, 1);
-      if (got <= 0) {
-        std::cerr << SystemError::FormatMessage() << std::endl;
-        //break;
-      }
-
-      result.append(buffer, got);
-    //}
-    
-    std::cout << result << std::endl;
-  } 
-
-  if (mask & EventType::EV_WRITE) {
-    std::cout << "EV_WRITE" << std::endl;
-  }
-}
-
-class TestServiceHandler : public ServiceHandlerBase {
+class TestServiceHandler : public ServiceHandler {
  public:
-  TestServiceHandler(IOService* io_service, StageType* stage)
-      : ServiceHandlerBase(io_service, stage) {
+  TestServiceHandler(IOService* io_service)
+      : ServiceHandler(io_service) {
   }
 
-  void OnHttpRequestMessage(HttpMessage* message) {
+  virtual void OnHttpRequestMessage(HttpMessage* message) {
     GetIOService()->GetIOStage()->Send(
         EventMessage(
             minotaur::MessageType::kIOMessageEvent, 
@@ -70,7 +44,7 @@ class TestServiceHandler : public ServiceHandlerBase {
             (uint64_t)message));
   } 
 
-  void OnRapidRequestMessage(RapidMessage* message) {
+  virtual void OnRapidRequestMessage(RapidMessage* message) {
     LOG_INFO(g_logger, "OnRapidRequestMessage");
 
     message->body = "response";
@@ -82,11 +56,11 @@ class TestServiceHandler : public ServiceHandlerBase {
             (uint64_t)message));
   } 
 
-  void OnRapidResponseMessage(RapidMessage* message) {
+  virtual void OnRapidResponseMessage(RapidMessage* message) {
     LOG_INFO(g_logger, "OnRapidResponseMessage");
   }
 
-  void OnLineRequestMessage(LineMessage* message) {
+  virtual void OnLineRequestMessage(LineMessage* message) {
     LOG_INFO(g_logger, "OnLineRequestMessage:" << message->body);
 
     message->body = "response";
@@ -98,58 +72,20 @@ class TestServiceHandler : public ServiceHandlerBase {
             (uint64_t)message));
   } 
 
-  void OnLineResponseMessage(LineMessage* message) {
+  virtual void OnLineResponseMessage(LineMessage* message) {
     LOG_INFO(g_logger, "OnLineResponseMessage");
   }
 
-};
-
-
-BOOST_AUTO_TEST_CASE(TestCompile) {
-
-  SocketOperation::IgnoreSigPipe();
-
-  EventLoop el;
-  int ret = 0;
-
-  ret = el.Init(65535);
-  BOOST_CHECK_EQUAL(ret, 0);
-
-  ret = SocketOperation::SetNonBlocking(0);
-  BOOST_CHECK_EQUAL(0, ret);
-
-  int i = 10;
-
-  int fd[2];
-  socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
-  SocketOperation::SetNonBlocking(fd[0]);
-  SocketOperation::SetNonBlocking(fd[1]);
-
-
-  struct epoll_event ee;
-  struct epoll_event events[1024];
-  int epoll_fd = epoll_create(1024);
-
-  ee.events = EPOLLIN | EPOLLET;
-  ee.data.fd = fd[0];
-  ee.data.u64 = 0;
-  epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd[0], &ee);
-
-  while (i--) {
-    SocketOperation::Send(fd[1], "1234567890", 10);
-    int ret = epoll_wait(epoll_fd, events, 1024, 1000);
-
-    for (int i = 0; i != ret; ++i) {
-      std::cout << "fired" << std::endl;
-    }
-
+  virtual TestServiceHandler* Clone() {
+    return new TestServiceHandler(GetIOService());
   }
-}
+};
 
 BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   SocketOperation::IgnoreSigPipe();
 
+  IOService io_service;
   IOServiceConfig config;
   config.fd_count = 65535;
   config.event_loop_worker = 2;
@@ -157,17 +93,14 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   config.io_queue_size = 1024 * 1024;
   config.service_worker = 2;
   config.service_queue_size = 1024 * 1024;
-  config.service_handler_factory = 
-    new GenericServiceHandlerFactory<TestServiceHandler>();
+  config.service_handler_prototype = 
+    new TestServiceHandler(&io_service);
 
-  std::cin >> config.event_loop_worker 
-           >> config.io_worker
-           >> config.service_worker;
+  int ret = io_service.Init(config);
+  BOOST_CHECK_EQUAL(ret, 0);
 
-  IOService io_service(config);
-  
   io_service.HandleSignal();
-  int ret = io_service.Start();
+  ret = io_service.Start();
   BOOST_CHECK_EQUAL(ret, 0);
 
   Acceptor* http_acceptor = IODescriptorFactory::Instance()
@@ -214,11 +147,13 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   ret = io_service.Run();
   BOOST_CHECK_EQUAL(0, ret);
   
+  
   IODescriptorFactory::Instance().Destroy(http_acceptor);
   IODescriptorFactory::Instance().Destroy(line_acceptor);
   IODescriptorFactory::Instance().Destroy(rapid_acceptor);
   IODescriptorFactory::Instance().Destroy(line_connector);
   IODescriptorFactory::Instance().Destroy(rapid_connector);
+  
 }
 
 BOOST_AUTO_TEST_SUITE_END()

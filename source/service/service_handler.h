@@ -8,58 +8,29 @@
 #include "../message.h"
 #include "../common/logger.h"
 #include "../net/io_message.h"
-#include "../handler_skeleton.h"
+#include "../handler.h"
 
 namespace minotaur {
 
-class ServiceHandlerBase;
-
-// this is a dummy class
-class ServiceHandlerFactory {
+class ServiceHandler : public HandlerSkeleton {
  public:
-  typedef ServiceHandlerBase Handler;
-  typedef Stage<ServiceHandlerFactory> StageType;
-  
-  virtual ~ServiceHandlerFactory() {}
 
-  virtual ServiceHandlerBase* Create(StageType* stage) = 0;
+  ServiceHandler(IOService* io_service);
 
-  ServiceHandlerFactory* BindIOService(IOService* io_service) {
-    io_service_ = io_service;
-    return this;
-  } 
+  void Run(StageData* data);
 
- protected:
-  IOService* io_service_;
-};
+  void Handle(const EventMessage& message);
 
-template<typename ServiceType>
-class GenericServiceHandlerFactory : public ServiceHandlerFactory{
- public:
-  typedef ServiceType Handler;
-  typedef Stage<ServiceHandlerFactory> StageType;
-   
-  ServiceType* Create(StageType* stage) {
-    return new ServiceType(io_service_, stage);
+  virtual ServiceHandler* Clone();
+
+  uint32_t Hash(const EventMessage& message) {
+    static std::atomic<uint32_t> round_robin;
+    uint16_t handler_id = message.GetProtocolMessage()->handler_id;
+    if (handler_id != Handler::kUnspecifiedId) {
+      return handler_id;
+    }
+    return ++round_robin;
   }
-};
-
-class ServiceHandlerBase : public HandlerSkeleton {
- public:
-  typedef Stage<ServiceHandlerFactory> StageType;
-  typedef EventMessage MessageType;
-
-  static const bool share_handler = true;
-  static const bool share_queue = true;
-
-  ServiceHandlerBase(IOService* io_service, StageType* stage);
-  virtual ~ServiceHandlerBase();
-
-  static uint32_t HashMessage(const EventMessage& message, uint32_t worker_count);
-
-  virtual void Handle(const EventMessage& message);
-
-  IOService* GetIOService() {return io_service_;}
 
  protected:
 
@@ -81,8 +52,6 @@ class ServiceHandlerBase : public HandlerSkeleton {
 
   virtual void OnUnknownProtocolMessage(ProtocolMessage* message);
 
-  IOService* io_service_;
-  StageType* stage_;
  private:
   LOGGER_CLASS_DECL(logger);
 };

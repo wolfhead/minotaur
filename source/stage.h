@@ -8,127 +8,59 @@
 #include "queue/sequencer.hpp"
 #include "queue/fifo.h"
 #include "message_queue.h"
+#include "message.h"
 
 namespace minotaur {
 
-template<typename MessageType, bool shared>
-struct QueueHelper {
-};
-
-template<typename MessageType>
-struct QueueHelper<MessageType, true> {
-  typedef typename queue::MPMCQueue<
-    MessageType,
-    queue::ConditionVariableStrategy<0, 16> > MessageQueueType;
-
-  typedef typename queue::MPMCQueue<
-    MessageType,
-    queue::NoWaitStrategy> PriorityMessageQueueType;
-};
-
-template<typename MessageType>
-struct QueueHelper<MessageType, false> {
+struct StageData {
   typedef typename queue::MPSCQueue<
-    MessageType, 
+    EventMessage, 
     queue::ConditionVariableStrategy<0, 16> > MessageQueueType;
 
   typedef typename queue::MPSCQueue<
-    MessageType,
+    EventMessage,
     queue::NoWaitStrategy> PriorityMessageQueueType;
-  
-  //typedef typename queue::Fifo<MessageType> MessageQueueType;
+
+  MessageQueueType* queue;
+  PriorityMessageQueueType* pri_queue;
+  void* handler;
+  bool running;
+  boost::thread* thread;
+  uint16_t handler_id;
 };
 
-template <typename Handler>
-class StageWorker {
- public:
-  typedef typename Handler::MessageType MessageType;
-  typedef typename QueueHelper<
-    MessageType, 
-    Handler::share_queue>::MessageQueueType MessageQueueType;
-  typedef typename QueueHelper<
-    MessageType, 
-    Handler::share_queue>::PriorityMessageQueueType PriorityMessageQueueType;
-
-  StageWorker(); 
-
-  ~StageWorker(); 
-
-  void SetHandler(Handler* handler, bool own);
-  Handler* GetHandler() {return handler_;}
-
-  void SetQueue(
-      MessageQueueType* queue, 
-      PriorityMessageQueueType* pri_queue,
-      bool own);
-  MessageQueueType* GetMessageQueue() {return queue_;}
-  PriorityMessageQueueType* GetPriorityMessageQueue() {return pri_queue_;}
-
-  int Start();
-  void Stop();
-  void Join();
-
- private:
-
-  void Run();
-
-  volatile bool running_;
-  boost::thread* thread_;
-
-  Handler* handler_;
-  bool own_handler_;
-
-  MessageQueueType* queue_;
-  PriorityMessageQueueType* pri_queue_;
-  bool own_queue_;
-};
-
-template <typename HandlerFactory>
+template<typename HandlerType>
 class Stage {
  public:
-  typedef typename HandlerFactory::Handler Handler; 
-  typedef StageWorker<Handler> StageWorkerType;
-  typedef typename Handler::MessageType MessageType;
-  typedef typename QueueHelper<
-    MessageType, 
-    Handler::share_queue>::MessageQueueType MessageQueueType;
-  typedef typename QueueHelper<
-    MessageType, 
-    Handler::share_queue>::PriorityMessageQueueType PriorityMessageQueueType;
+  typedef typename StageData::MessageQueueType MessageQueueType;
+
+  typedef typename StageData::PriorityMessageQueueType PriorityMessageQueueType;
 
   Stage(
-      HandlerFactory* factory, 
+      HandlerType* prototype,
       uint32_t worker_count, 
       uint32_t queue_size);
 
-  ~Stage();
+  virtual ~Stage();
 
   int Start();
   int Wait();
   int Stop();
-  bool Send(const MessageType& message);
-  bool SendPriority(const MessageType& message);
+  bool Send(const EventMessage& message);
+  bool SendPriority(const EventMessage& message);
 
  private:
-  int BuildWorker();
-  int BindQueue();
-  int BindHandler();
 
-  int StartWorker();
-  void DestroyWorker();
-
+  int Destroy();
+  
+  HandlerType* prototype_;
   uint32_t worker_count_;
   uint32_t queue_size_;
-
-  HandlerFactory* factory_;
-  MessageQueueType* queue_;
-  PriorityMessageQueueType* pri_queue_;
-  Handler* handler_;
-  StageWorkerType* worker_;
+  std::vector<StageData*> data_;
 };
 
 } //namespace minotaur
 
-#include "stage_impl.h"
+#include "stage.impl.h"
 
 #endif // _MINOTAUR_STAGE_H_
