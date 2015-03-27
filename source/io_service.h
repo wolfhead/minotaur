@@ -21,6 +21,17 @@ template<typename T>
 class Stage;
 
 struct IOServiceConfig {
+  IOServiceConfig() 
+      : fd_count(65535) 
+      , event_loop_worker(1)
+      , io_worker(1)
+      , io_queue_size(1024 * 128) 
+      , service_worker(1)
+      , service_queue_size(1024 * 128)
+      , service_handler_prototype(NULL)
+      , stack_size(2048) { 
+  }
+
   uint32_t fd_count;
   uint8_t event_loop_worker;
 
@@ -31,6 +42,8 @@ struct IOServiceConfig {
   uint32_t service_queue_size;
 
   ServiceHandler* service_handler_prototype;
+
+  uint32_t stack_size;
 };
 
 class IOService {

@@ -24,27 +24,25 @@ IOHandler::IOHandler(IOService* io_service)
 void IOHandler::ProcessTimer() {
   Timer::NodeType* timer_head = timer_.ProcessTimer();
   Timer::NodeType* current = timer_head;
-  Timer::NodeType* next = NULL;
   while (current) {
-    next = current->next;
     if (current->active) {
       current->data();
     }
-    current = next;
+    current = current->next;
   }
   if (timer_head) {
     timer_.DestroyTimerNode(timer_head);
   }
 }
 
-void IOHandler::Run(StageData* data) {
+void IOHandler::Run(StageData<IOHandler>* data) {
   prctl(PR_SET_NAME, "io_handler");
   current_io_handler_ = this;
 
   EventMessage message;
   while (data->running) {
     ProcessTimer();
-    if (!data->queue->Pop(&message, 5)) {
+    if (!data->queue->Pop(&message, 2)) {
       continue;
     }
     Handle(message);    
@@ -163,7 +161,7 @@ void IOHandler::HandleIOMessageFailure(const EventMessage& message) {
   ProtocolMessage* protocol_message = message.GetProtocolMessage();
   if (protocol_message->direction == ProtocolMessage::kOutgoingRequest) {
     protocol_message->status = ProtocolMessage::kInternalFailure;
-    if (!GetIOService()->GetServiceStage()->Send(message)) {
+    if (!GetIOService()->GetServiceStage()->Send(protocol_message)) {
       MI_LOG_WARN(logger, "IOHandler::HandleIOMessageFailure send fail");
     }
   } else {

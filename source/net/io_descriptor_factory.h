@@ -13,8 +13,10 @@ namespace minotaur {
 
 class IOService;
 class Channel;
+class ServiceChannel;
 class Acceptor;
 class ClientChannel;
+class Service;
 
 class IODescriptorFactory {
  public:
@@ -38,13 +40,15 @@ class IODescriptorFactory {
       int* port, 
       int* protocol);
 
-  Channel* CreateChannel(
+  ServiceChannel* CreateServiceChannel(
       IOService* io_service, 
-      int fd);
+      int fd,
+      Service* service);
 
   Acceptor* CreateAcceptor(
       IOService* io_service,
-      const std::string& address);
+      const std::string& address,
+      const std::string& service_name = "");
 
   ClientChannel* CreateClientChannel(
       IOService* io_service,
@@ -57,7 +61,6 @@ class IODescriptorFactory {
   IODescriptorFactory();
 
   LOGGER_CLASS_DECL(logger);
-
 
   lockfree::freelist<IODescriptor> freelist_;
   ProtocolFactory protocol_factory_;

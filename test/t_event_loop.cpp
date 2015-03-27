@@ -24,7 +24,7 @@ using namespace minotaur;
 using namespace minotaur::event;
 using namespace minotaur::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config(log4cplus::INFO_LOG_LEVEL);
+static minotaur::unittest::UnittestLogger logger_config(log4cplus::TRACE_LOG_LEVEL);
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 LOGGER_STATIC_DECL_IMPL(g_logger, "root");
 
@@ -82,8 +82,6 @@ class TestServiceHandler : public ServiceHandler {
 };
 
 BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
-
-  SocketOperation::IgnoreSigPipe();
 
   IOService io_service;
   IOServiceConfig config;

@@ -8,15 +8,13 @@
 
 namespace minotaur {
 
-__thread Coroutine* Coroutine::current_coroutine_ = NULL;
-
 void Coroutine::Process(void* arg) {
   Coroutine* coro = (Coroutine*)arg;
   coro->Run();
   Coroutine* caller = coro->GetCaller();
   coro->Destroy();
   if (caller) {
-    SetCurrent(caller);
+    CoroutineContext::SetCoroutine(caller);
     coro_transfer(coro, caller);
   }
 }

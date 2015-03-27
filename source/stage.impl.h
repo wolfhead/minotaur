@@ -32,7 +32,7 @@ int Stage<HandlerType>::Start() {
     HandlerType* handler = prototype_->Clone();
     uint16_t handler_id = i + 1;
 
-    StageData* stage_data = new StageData;
+    StageDataType* stage_data = new StageDataType;
     stage_data->queue = new MessageQueueType(queue_size_);
     stage_data->pri_queue = new PriorityMessageQueueType(queue_size_);
     stage_data->handler = handler;
@@ -50,8 +50,8 @@ int Stage<HandlerType>::Start() {
 template<typename HandlerType>
 int Stage<HandlerType>::Wait() {
   for (uint16_t i = 0; i != data_.size(); ++i) {
-    StageData& data = *data_[i];
-    data.thread->join();
+    StageDataType* data = data_[i];
+    data->thread->join();
   }
 
   Destroy();
@@ -61,14 +61,14 @@ int Stage<HandlerType>::Wait() {
 template<typename HandlerType>
 int Stage<HandlerType>::Stop() {
   for (size_t i = 0; i != data_.size(); ++i) {
-    StageData& data = *data_[i];
-    data.running = false;
+    StageDataType* data = data_[i];
+    data->running = false;
   }
   return 0;
 }
 
 template<typename HandlerType>
-bool Stage<HandlerType>::Send(const EventMessage& message) {
+bool Stage<HandlerType>::Send(const MessageType& message) {
   MessageQueueType* queue = 
     data_.at(prototype_->Hash(message) % worker_count_)->queue;
   if (!queue->Push(message)) {
@@ -78,7 +78,7 @@ bool Stage<HandlerType>::Send(const EventMessage& message) {
 }
 
 template<typename HandlerType>
-bool Stage<HandlerType>::SendPriority(const EventMessage& message) {
+bool Stage<HandlerType>::SendPriority(const MessageType& message) {
   PriorityMessageQueueType* queue = 
     data_.at(prototype_->Hash(message) % worker_count_)->pri_queue;
   if (!queue->Push(message)) {
@@ -90,12 +90,12 @@ bool Stage<HandlerType>::SendPriority(const EventMessage& message) {
 template<typename HandlerType>
 int Stage<HandlerType>::Destroy() {
   for (size_t i = 0; i != data_.size(); ++i) {
-    StageData& data = *data_[i];
-    delete data.queue;
-    delete data.pri_queue;
-    delete data.thread;
-    delete (HandlerType*)data.handler;
-    delete &data;
+    StageDataType* data = data_[i];
+    delete data->queue;
+    delete data->pri_queue;
+    delete data->thread;
+    delete data->handler;
+    delete data;
   }
 
   data_.clear();

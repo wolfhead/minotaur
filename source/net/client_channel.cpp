@@ -148,11 +148,7 @@ void ClientChannel::OnDecodeMessage(ProtocolMessage* message) {
 
   MessageFactory::Destroy(keeper_message);
 
-  if (!GetIOService()->GetServiceStage()->Send(
-        EventMessage(
-          MessageType::kIOMessageEvent, 
-          GetDescriptorId(),
-          (uint64_t)message))) {
+  if (!GetIOService()->GetServiceStage()->Send(message)) {
     MI_LOG_WARN(logger, "Channel::DecodeMessage Send message fail");
     MessageFactory::Destroy(message);
     return;

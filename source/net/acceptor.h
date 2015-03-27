@@ -8,12 +8,15 @@
 
 namespace minotaur { 
 
+class Service;
+
 class Acceptor : public Socket {
  public:
   Acceptor(
       IOService* io_service, 
       const std::string& host,
-      int port);
+      int port,
+      Service* service);
 
   ~Acceptor();
 
@@ -25,6 +28,8 @@ class Acceptor : public Socket {
 
   inline int GetPort() const {return port_;}
 
+  inline Service* GetService() {return service_;}
+
  protected:
   virtual void OnRead();
 
@@ -35,6 +40,7 @@ class Acceptor : public Socket {
 
   std::string host_;
   int port_;
+  Service* service_;
 };
 
 } //namespace minotaur

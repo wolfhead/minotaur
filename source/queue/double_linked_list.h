@@ -114,17 +114,15 @@ class DoubleLinkedList {
     size_ = 0;
   }
 
-  uint32_t size() {
-    return size_;
-  }
+  inline uint32_t size() const {return size_;}
+
+  inline bool empty() const {return size() == 0;}
 
  private:
   T* front_;
   T* tail_;
   uint32_t size_;
 };
-
-
 
 } //namespace minotaur
 

@@ -6,7 +6,9 @@
 #include "acceptor.h"
 #include "channel.h"
 #include "client_channel.h"
+#include "service_channel.h"
 #include "socket_op.h"
+#include "../service/service.h"
 
 namespace minotaur {
 
@@ -16,7 +18,8 @@ struct io_descriptor_size {
   union {
     char channel_size[sizeof(Channel)];
     char acceptor_size[sizeof(Acceptor)];
-    char cnnector_size[sizeof(ClientChannel)];
+    char service_channel_size[sizeof(ServiceChannel)];
+    char client_channel_size[sizeof(ClientChannel)];
   } data;
   uint64_t padding;
 };
@@ -30,12 +33,13 @@ IODescriptorFactory::IODescriptorFactory()
     , protocol_factory_() {
 }
 
-Channel* IODescriptorFactory::CreateChannel(
+ServiceChannel* IODescriptorFactory::CreateServiceChannel(
     IOService* io_service,
-    int fd) {
+    int fd,
+    Service* service) {
   uint64_t descriptor_id = 0;
-  Channel* channel = freelist_.alloc_with<Channel>(
-      &descriptor_id, io_service, fd);
+  ServiceChannel* channel = freelist_.alloc_with<ServiceChannel>(
+      &descriptor_id, io_service, fd, service);
   if (!channel) {
     return NULL;
   }
@@ -46,7 +50,8 @@ Channel* IODescriptorFactory::CreateChannel(
 
 Acceptor* IODescriptorFactory::CreateAcceptor(
     IOService* io_service, 
-    const std::string& address) {
+    const std::string& address,
+    const std::string& service_name /* = ""*/) {
   std::string ip;
   int port = 0;
   int protocol_type = 0;
@@ -63,9 +68,15 @@ Acceptor* IODescriptorFactory::CreateAcceptor(
     return NULL;
   }
 
+  Service* service = ServiceManager::Instance()->GetService(service_name);
+  if (!service && !service_name.empty()) {
+    MI_LOG_ERROR(logger, "IODescriptorFactory::CreateAcceptor unknown service:" << service_name);
+    return NULL;
+  }
+
   uint64_t descriptor_id = 0;
   Acceptor* acceptor = freelist_.alloc_with<Acceptor>(
-      &descriptor_id, io_service, ip, port);
+      &descriptor_id, io_service, ip, port, service);
   if (!acceptor) {
     return NULL;
   }

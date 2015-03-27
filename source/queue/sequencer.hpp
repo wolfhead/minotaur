@@ -75,7 +75,7 @@ class Sequencer {
     return true;
   }
 
-  bool Pop(T* data, uint32_t milliseconds = 0) {
+  bool Pop(T* data, int32_t milliseconds = 0) {
     uint64_t consumer_seq = consumer_curser_.Get();
     uint16_t loop = 0;
     BufferItem* item;
@@ -85,6 +85,10 @@ class Sequencer {
       consumer_seq = consumer_curser_.Get();
       item = &ring_.At(consumer_seq + 1);
       if (item->flag.load(boost::memory_order_acquire) != BufferItem::kOccupiedItem) {
+        if (milliseconds == -1) {
+          return false;
+        }
+
         if (milliseconds == 0 
             ? wait_.Wait(loop) 
             : wait_.TimedWait(loop, milliseconds)) {

@@ -15,34 +15,19 @@ ServiceHandler::ServiceHandler(IOService* io_service) {
   SetIOService(io_service);
 }
 
-void ServiceHandler::Run(StageData* data) {
+void ServiceHandler::Run(StageData<ServiceHandler>* data) {
   prctl(PR_SET_NAME, "service_handler");
 
-  EventMessage message;
+  ProtocolMessage* message;
   while (data->running) {
-    if (!data->queue->Pop(&message, 5)) {
+    if (!data->queue->Pop(&message, 2)) {
       continue;
     }
     Handle(message);    
   }
 }
 
-void ServiceHandler::Handle(const EventMessage& message) {
-  switch (message.type_id) {
-    case minotaur::MessageType::kIOMessageEvent:
-      return OnIOMessageEvent(message);
-    default:
-      return OnUnknownEvent(message);
-  }
-}
-
-void ServiceHandler::OnUnknownEvent(const EventMessage& message) {
-  MI_LOG_WARN(logger, "unknown event:" << message.type_id);
-  message.Destroy();
-}
-
-void ServiceHandler::OnIOMessageEvent(const EventMessage& message) {
-  ProtocolMessage* protocol_message = message.GetProtocolMessage();
+void ServiceHandler::Handle(ProtocolMessage* protocol_message) {
   switch (protocol_message->type_id) {
     case minotaur::MessageType::kLineMessage:
       return protocol_message->direction == ProtocolMessage::kIncomingRequest 

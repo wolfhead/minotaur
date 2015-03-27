@@ -14,10 +14,12 @@ class CoroTask : public Coroutine {
  public:
   typedef boost::function<void()> TaskType;
 
+  CoroTask(const TaskType& task) : task_(task) {}
+
   void SetTask(const TaskType& task) {task_ = task;}
 
  protected:
-  void Run() {
+  virtual void Run() {
     task_();
   }
 

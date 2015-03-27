@@ -14,3 +14,4 @@ include(${CMAKE_CONFIG_DIR}/tcmalloc.cmake)
 
 add_subdirectory(source)
 add_subdirectory(test)
+add_subdirectory(sample)

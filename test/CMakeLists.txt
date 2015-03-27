@@ -44,8 +44,8 @@ add_executable(t_io_buffer
 add_executable(t_message_queue
   t_message_queue.cpp)
 
-add_executable(t_stage
-  t_stage.cpp)
+#add_executable(t_stage
+#  t_stage.cpp)
 
 add_executable(t_coroutine
   t_coroutine.cpp)
@@ -61,6 +61,9 @@ add_executable(t_timer
 
 add_executable(t_double_linked_list
   t_double_linked_list.cpp)
+
+add_executable(t_linked_list
+  t_linked_list.cpp)
 
 add_executable(t_io_descriptor_factory
   t_io_descriptor_factory.cpp)

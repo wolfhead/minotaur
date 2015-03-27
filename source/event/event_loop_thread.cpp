@@ -65,7 +65,7 @@ void EventLoopThread::Run() {
   event_loop_notifier_.SetWorkingThreadId(ThreadId::Get());
 
   while (running_) {
-    if (event_loop_.ProcessEvent(1000) < 0) {
+    if (event_loop_.ProcessEvent(2) < 0) {
       LOG_ERROR(logger, "EventLoopThread::Run ProcessEvent fail with:"
           << SystemError::FormatMessage());
     } 

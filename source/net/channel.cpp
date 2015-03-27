@@ -142,22 +142,4 @@ int Channel::EncodeMessage(ProtocolMessage* message) {
   return 0;
 }
 
-void Channel::OnDecodeMessage(ProtocolMessage* message) {
-  message->status = ProtocolMessage::kStatusOK;
-  message->direction = ProtocolMessage::kIncomingRequest;
-  message->handler_id = Handler::kUnspecifiedId;
-  message->descriptor_id = GetDescriptorId();
-  message->payload = 0;
-
-  if (!GetIOService()->GetServiceStage()->Send(
-        EventMessage(
-          MessageType::kIOMessageEvent, 
-          GetDescriptorId(),
-          (uint64_t)message))) {
-    MI_LOG_WARN(logger, "Channel::DecodeMessage Send message fail");
-    MessageFactory::Destroy(message);
-  }
-
-}
-
 } //namespace minotaur

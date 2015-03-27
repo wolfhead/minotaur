@@ -53,7 +53,7 @@ class Channel : public Socket {
 
   virtual int EncodeMessage(ProtocolMessage* message);
 
-  virtual void OnDecodeMessage(ProtocolMessage* message);
+  virtual void OnDecodeMessage(ProtocolMessage* message) = 0;
 
   std::string ip_;
   int port_;

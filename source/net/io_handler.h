@@ -12,8 +12,9 @@ namespace minotaur {
 class IOService;
 class IOHandler;
 
-class IOHandler : public HandlerSkeleton {
+class IOHandler : public Handler {
  public:
+  typedef EventMessage MessageType;
   typedef std::function<void()> TimerFunctor;
   typedef event::Timer<TimerFunctor> Timer;
 
@@ -23,7 +24,7 @@ class IOHandler : public HandlerSkeleton {
 
   IOHandler(IOService* io_service);
 
-  void Run(StageData* data);
+  void Run(StageData<IOHandler>* data);
 
   void Handle(const EventMessage& message);
 

@@ -8,7 +8,9 @@
 #include "event/event_loop_stage.h"
 #include "net/channel.h"
 #include "net/io_handler.h"
+#include "net/socket_op.h"
 #include "service/service_handler.h"
+#include "coroutine/coro_all.h"
 
 namespace minotaur {
 
@@ -26,6 +28,11 @@ IOService::~IOService() {
 }
 
 int IOService::Init(const IOServiceConfig& config) {
+
+  SocketOperation::IgnoreSigPipe();
+
+  ThreadLocalCorotineFactory::GlobalInit(config.stack_size); 
+
   io_service_config_ = config;
   event_loop_stage_ = 
     new event::EventLoopStage(

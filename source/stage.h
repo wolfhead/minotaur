@@ -12,18 +12,21 @@
 
 namespace minotaur {
 
+template<typename Handler>
 struct StageData {
+  typedef typename Handler::MessageType MessageType;
+
   typedef typename queue::MPSCQueue<
-    EventMessage, 
+    MessageType, 
     queue::ConditionVariableStrategy<0, 16> > MessageQueueType;
 
   typedef typename queue::MPSCQueue<
-    EventMessage,
+    MessageType,
     queue::NoWaitStrategy> PriorityMessageQueueType;
 
   MessageQueueType* queue;
   PriorityMessageQueueType* pri_queue;
-  void* handler;
+  Handler* handler;
   bool running;
   boost::thread* thread;
   uint16_t handler_id;
@@ -32,9 +35,10 @@ struct StageData {
 template<typename HandlerType>
 class Stage {
  public:
-  typedef typename StageData::MessageQueueType MessageQueueType;
-
-  typedef typename StageData::PriorityMessageQueueType PriorityMessageQueueType;
+  typedef StageData<HandlerType> StageDataType;
+  typedef typename HandlerType::MessageType MessageType;
+  typedef typename StageDataType::MessageQueueType MessageQueueType;
+  typedef typename StageDataType::PriorityMessageQueueType PriorityMessageQueueType;
 
   Stage(
       HandlerType* prototype,
@@ -46,8 +50,8 @@ class Stage {
   int Start();
   int Wait();
   int Stop();
-  bool Send(const EventMessage& message);
-  bool SendPriority(const EventMessage& message);
+  bool Send(const MessageType& message);
+  bool SendPriority(const MessageType& message);
 
  private:
 
@@ -56,7 +60,7 @@ class Stage {
   HandlerType* prototype_;
   uint32_t worker_count_;
   uint32_t queue_size_;
-  std::vector<StageData*> data_;
+  std::vector<StageDataType*> data_;
 };
 
 } //namespace minotaur

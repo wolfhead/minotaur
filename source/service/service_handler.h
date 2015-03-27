@@ -12,20 +12,20 @@
 
 namespace minotaur {
 
-class ServiceHandler : public HandlerSkeleton {
+class ServiceHandler : public Handler {
  public:
+  typedef ProtocolMessage* MessageType;
 
   ServiceHandler(IOService* io_service);
 
-  void Run(StageData* data);
+  virtual void Run(StageData<ServiceHandler>* data);
 
-  void Handle(const EventMessage& message);
 
   virtual ServiceHandler* Clone();
 
-  uint32_t Hash(const EventMessage& message) {
+  uint32_t Hash(ProtocolMessage* message) {
     static std::atomic<uint32_t> round_robin;
-    uint16_t handler_id = message.GetProtocolMessage()->handler_id;
+    uint16_t handler_id = message->handler_id;
     if (handler_id != Handler::kUnspecifiedId) {
       return handler_id;
     }
@@ -34,9 +34,7 @@ class ServiceHandler : public HandlerSkeleton {
 
  protected:
 
-  virtual void OnUnknownEvent(const EventMessage& message);
-
-  virtual void OnIOMessageEvent(const EventMessage& message);
+  virtual void Handle(ProtocolMessage* message);
 
   virtual void OnLineRequestMessage(LineMessage* message);
 

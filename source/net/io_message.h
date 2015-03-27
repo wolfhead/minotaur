@@ -10,6 +10,8 @@
 
 namespace minotaur {
 
+class Service;
+
 class ProtocolMessage : public MessageBase {
  public:
   enum {
@@ -24,6 +26,11 @@ class ProtocolMessage : public MessageBase {
     kInternalFailure,
   };
 
+  template<typename T>
+  T GetPayloadAs() {
+    return (T)(payload.data);
+  }
+
   virtual void Dump(std::ostream& os) const;
 
   uint8_t status;
@@ -31,7 +38,10 @@ class ProtocolMessage : public MessageBase {
   uint16_t handler_id;
   uint32_t sequence_id;
   uint64_t descriptor_id;
-  uint64_t payload;
+  union {
+    uint64_t data;
+    Service* service;
+  } payload;
   // for book-keeper
   ProtocolMessage* next_;
   ProtocolMessage* prev_;

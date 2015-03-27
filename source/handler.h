@@ -25,22 +25,8 @@ class Handler {
   void SetIOService(IOService* service) {io_service_ = service;}
   IOService* GetIOService() {return io_service_;}
 
-  void Run(StageData* data);
-
  private:
   IOService* io_service_;
-};
-
-class HandlerSkeleton : public Handler {
- public:
-  void Run(StageData* data);
-
- protected:
-  void OnStart();
-  void OnLoop();
-  void OnIdle();
-  void Handle(const EventMessage& message);
-  void OnStop();
 };
 
 } //namespace minotaur

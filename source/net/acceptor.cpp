@@ -4,7 +4,7 @@
  */
 #include "acceptor.h"
 #include "socket_op.h"
-#include "channel.h"
+#include "service_channel.h"
 #include "../io_service.h"
 #include "io_descriptor_factory.h"
 #include "protocol/protocol.h"
@@ -16,10 +16,12 @@ LOGGER_CLASS_IMPL_NAME(logger, Acceptor, "net.Acceptor");
 Acceptor::Acceptor(
     IOService* io_service,
     const std::string& host,
-    int port) 
+    int port,
+    Service* service) 
     : Socket(io_service, false)
     , host_(host)
-    , port_(port) {
+    , port_(port) 
+    , service_(service) {
 }
 
 Acceptor::~Acceptor() {
@@ -108,8 +110,8 @@ void Acceptor::OnRead() {
     int port = ntohs(sa.sin_port);
     inet_ntop(AF_INET, &sa.sin_addr, client_ip_buffer, INET_ADDRSTRLEN);
 
-    Channel* channel = IODescriptorFactory::Instance()
-        .CreateChannel(GetIOService(), client_fd);
+    ServiceChannel* channel = IODescriptorFactory::Instance()
+        .CreateServiceChannel(GetIOService(), client_fd, GetService());
     if (!channel) {
       MI_LOG_ERROR(logger, "Acceptor::OnRead Create channel failed");
       continue;
