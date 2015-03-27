@@ -5,9 +5,9 @@
  * @author Wolfhead
  */
 #include "../protocol.h"
-#include "http_parser.h"
 #include <list>
 #include "../../../common/logger.h"
+#include "../../../3rd-party/http_parser/http_parser.h"
 
 namespace minotaur {
 

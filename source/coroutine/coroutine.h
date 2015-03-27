@@ -6,7 +6,7 @@
  */
 #include <stdint.h>
 #include <iostream>
-#include "libcoro/coro.h"
+#include "../3rd-party/libcoro/coro.h"
 #include "coro_context.h"
 
 namespace minotaur {

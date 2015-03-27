@@ -1,6 +1,7 @@
 INCLUDE (CheckSymbolExists)
 
 include_directories(
+  ${Boost_INCLUDE_DIRS}
   ${LOG4CPLUS_INCLUDE_DIRS}
 )
 
@@ -44,10 +45,8 @@ set(MINOTAUR_SOURCE
   net/protocol/protocol_factory.cpp
   net/protocol/line/line_protocol.cpp
   net/protocol/rapid/rapid_protocol.cpp
-  net/protocol/http/http_parser.c
   net/protocol/http/http_protocol.cpp
-  coroutine/libcoro/coro.c
-  coroutine/libcoro/coro.h
+
   coroutine/coroutine.cpp
   coroutine/coro_actor.cpp
   coroutine/coro_service.cpp
@@ -56,6 +55,9 @@ set(MINOTAUR_SOURCE
   service/coroutine_service_handler.cpp
   service/service.cpp
 
+  3rd-party/libcoro/coro.c
+  3rd-party/tinyxml2/tinyxml2.cpp
+  3rd-party/http_parser/http_parser.c
   #event/timer/timer_wheel.cpp
 # matrix/matrix_item_map.cpp
 )
