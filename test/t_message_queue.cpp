@@ -1,7 +1,7 @@
 #define BOOST_AUTO_TEST_MAIN
 
 #include <boost/test/unit_test.hpp>
-#include <message_queue.h>
+#include <queue/message_queue.h>
 #include <common/logger.h>
 #include <common/time_util.h>
 #include "unittest_logger.h"

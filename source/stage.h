@@ -7,7 +7,6 @@
 #include <boost/thread.hpp>
 #include "queue/sequencer.hpp"
 #include "queue/fifo.h"
-#include "message_queue.h"
 #include "message.h"
 
 namespace minotaur {
