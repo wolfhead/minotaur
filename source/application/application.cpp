@@ -83,7 +83,7 @@ int Application::Run(int argc, char* argv[]) {
 void Application::DumpStatus(std::ostream& os) const {
   os << "version_info: " << version_info_ << std::endl
      << "logger_config: " << logger_config_ << std::endl 
-     << "application_config:" << application_config_ << std::endl
+     << "application_config: " << application_config_ << std::endl
      << "help_mode: " << (help_mode_ ? "true" : "false") << std::endl
      << "daemon_mode: " << (daemon_mode_ ? "true" : "false") << std::endl;
 }

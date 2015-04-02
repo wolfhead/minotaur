@@ -87,10 +87,6 @@ int EventLoopNotifier::Notify(int fd, uint32_t mask, FdEventProc* proc, void* da
     return -1;
   }
 
-  if (queue_.Size() < 16) {
-    return 0;
-  }
-
   if (SocketOperation::Send(event_fd_, &add_count, sizeof(uint64_t)) != sizeof(uint64_t)) {
     LOG_FATAL(logger, "EventLoopNotifier::Notify fail"
         << ", event_fd:" << event_fd_
