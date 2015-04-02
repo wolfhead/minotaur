@@ -17,13 +17,28 @@ namespace minotaur {
 LOGGER_CLASS_IMPL_NAME(logger, IOService, "IOService");
 volatile IOService* IOService::current_ = NULL;
 
-IOService::IOService() { 
+IOService::IOService() 
+    : event_loop_stage_(NULL)
+    , io_stage_(NULL)
+    , service_stage_(NULL) { 
 }
 
 IOService::~IOService() {
-  delete service_stage_;
-  delete io_stage_;
-  delete event_loop_stage_;
+  if (service_stage_) {
+    delete service_stage_;
+    service_stage_ = NULL;
+  }
+
+  if (io_stage_) {
+    delete io_stage_;
+    io_stage_ = NULL;
+  }
+
+  if (event_loop_stage_) {
+    delete event_loop_stage_;
+    event_loop_stage_ = NULL;
+  }
+
   current_ = NULL;
 }
 
@@ -75,7 +90,10 @@ int IOService::Run() {
   MI_LOG_INFO(logger, "IOService::Run");
 
   service_stage_->Wait();
+  return 0;
+}
 
+int IOService::CleanUp() {
   io_stage_->Stop();
   io_stage_->Wait();
 

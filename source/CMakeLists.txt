@@ -51,9 +51,13 @@ set(MINOTAUR_SOURCE
   coroutine/coro_actor.cpp
   coroutine/coro_service.cpp
   coroutine/coro_factory.cpp
+
   service/service_handler.cpp
   service/coroutine_service_handler.cpp
   service/service.cpp
+
+  application/application.cpp
+  application/config_manager.cpp
 
   3rd-party/libcoro/coro.c
   3rd-party/tinyxml2/tinyxml2.cpp

@@ -58,6 +58,7 @@ class IOService {
   int Start();
   int Stop();
   int Run();
+  int CleanUp();
 
   event::EventLoopStage* GetEventLoopStage() {
     return event_loop_stage_;

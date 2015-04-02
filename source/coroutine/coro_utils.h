@@ -65,6 +65,13 @@ inline bool Send(const EventMessage& message) {
   return CoroutineContext::GetIOService()->GetIOStage()->Send(message);
 }
 
+inline bool Send(ProtocolMessage* message) {
+  return coro::Send(EventMessage(
+        minotaur::MessageType::kIOMessageEvent, 
+        message->descriptor_id, 
+        (uint64_t)message));
+}
+
 } // namespace coro
 } // namespace minotaur
 
