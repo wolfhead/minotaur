@@ -9,8 +9,15 @@
 
 namespace minotaur {
 
+struct ServiceConfig {
+  std::string address;
+  std::string name;
+};
+
 class ConfigManager {
  public:
+  typedef std::vector<ServiceConfig> ServicesConfig;
+
   ConfigManager();
   virtual ~ConfigManager();
 
@@ -18,15 +25,21 @@ class ConfigManager {
 
   IOServiceConfig& GetIOServiceConfig() {return io_service_config_;}
 
+  ServicesConfig GetServicesConfig() {return services_config_;}
+
  protected:
   virtual int LoadIOServiceConfig(tinyxml2::XMLElement* element, IOServiceConfig* config);
 
   virtual int LoadApplicationConfig(tinyxml2::XMLElement* element);
 
+  virtual int LoadServicesConfig(tinyxml2::XMLElement*, ServicesConfig* config);
+
  private:
   LOGGER_CLASS_DECL(logger);
 
   IOServiceConfig io_service_config_;
+
+  ServicesConfig services_config_;
 };
 
 } //namespace minotaur

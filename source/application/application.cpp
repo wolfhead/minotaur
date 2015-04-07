@@ -13,6 +13,9 @@
 #include <log4cplus/fileappender.h>
 #include <log4cplus/layout.h> 
 #include "config_manager.h"
+#include "../net/acceptor.h"
+#include "../net/io_descriptor_factory.h"
+#include "../service/service.h"
 
 namespace minotaur {
 
@@ -67,11 +70,17 @@ int Application::Run(int argc, char* argv[]) {
     return -1;
   }
 
+  if (0 != StartService()) {
+    return -1;
+  }
+
   if (0 != RunIOService()) {
     return -1;
   }
 
   OnStop();
+
+  StopService();
 
   StopIOService();
     
@@ -124,7 +133,7 @@ int Application::ParseCmd(int argc, char* argv[]) {
 
 int Application::InitApplication() {
   if (daemon_mode_) {
-    daemon(1, 1);
+    daemon(1, 0);
   }
   return 0;
 }
@@ -184,8 +193,48 @@ int Application::StartIOService() {
   return 0;
 }
 
+int Application::StartService() {
+  if (!config_manager_) {
+    MI_LOG_DEBUG(logger, "Application::StartService no config set, ignore");
+    return 0;
+  }
+
+  for (const auto& service_config : config_manager_->GetServicesConfig()) {
+    Acceptor* acceptor = IODescriptorFactory::Instance()
+      .CreateAcceptor(GetIOService(), service_config.address, service_config.name);
+    if (!acceptor) {
+      MI_LOG_ERROR(logger, "Application::StartService CreateAcceptor fail"
+          << ", address:" << service_config.address
+          << ", name:" << service_config.name);
+      return -1;
+    }
+
+    if (0 != acceptor->Start()) {
+      MI_LOG_ERROR(logger, "Application::StartService Start Acceptor fail"
+          << ", address:" << service_config.address
+          << ", name:" << service_config.name);
+      IODescriptorFactory::Instance().Destroy(acceptor);
+      return -1;
+    } else {
+      MI_LOG_INFO(logger, "Application::StartService"
+          << ", address:" << service_config.address
+          << ", service:" << service_config.name);
+    }
+
+    acceptor_.push_back(acceptor);
+  }
+  return 0;
+}
+
 int Application::RunIOService() {
   io_service_.Run();
+  return 0;
+}
+
+int Application::StopService() {
+  for (Acceptor* acceptor : acceptor_) {
+    IODescriptorFactory::Instance().Destroy(acceptor);
+  }
   return 0;
 }
 

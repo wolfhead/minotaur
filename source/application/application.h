@@ -11,7 +11,9 @@
 namespace minotaur {
 
 class ServiceHandler;
+class ServiceManager;
 class ConfigManager;
+class Acceptor;
 
 class Application {
  public:
@@ -19,9 +21,11 @@ class Application {
 
   virtual ~Application();
 
+  IOService* GetIOService() {return &io_service_;}
+
   ConfigManager* GetConfigManager() {return config_manager_;}
 
-  IOService* GetIOService() {return &io_service_;}
+  ServiceManager* GetServiceManager() {return service_manager_;}
 
   int Run(int argc, char* argv[]);
   
@@ -51,7 +55,11 @@ class Application {
 
   int StartIOService();
 
+  int StartService();
+
   int RunIOService();
+
+  int StopService();
 
   int StopIOService();
 
@@ -60,12 +68,15 @@ class Application {
   IOServiceConfig io_service_config_;
 
   ConfigManager* config_manager_;
+  ServiceManager* service_manager_;
 
   bool help_mode_;
   bool daemon_mode_;
   std::string version_info_;
   std::string application_config_;
   std::string logger_config_;
+
+  std::vector<Acceptor*> acceptor_;
 };
 
 } //namespace minotaur

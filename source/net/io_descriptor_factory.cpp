@@ -68,7 +68,7 @@ Acceptor* IODescriptorFactory::CreateAcceptor(
     return NULL;
   }
 
-  Service* service = ServiceManager::Instance()->GetService(service_name);
+  Service* service = ServiceFactory::Instance()->GetService(service_name);
   if (!service && !service_name.empty()) {
     MI_LOG_ERROR(logger, "IODescriptorFactory::CreateAcceptor unknown service:" << service_name);
     return NULL;

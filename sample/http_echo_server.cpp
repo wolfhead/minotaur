@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
   return 
     app
       .SetOnStart([&](){
-        return app.StartService("http://0.0.0.0:6600", [](ProtocolMessage* message){
+        return app.RegisterService("echo_handler", [](ProtocolMessage* message){
           coro::Send(message);
         });})
       .Run(argc, argv);

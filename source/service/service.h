@@ -35,10 +35,10 @@ Service* CreateService(const T& functor) {
   return new GenericService<T>(functor);
 }
 
-class ServiceManager {
+class ServiceFactory {
  public:
-  static ServiceManager* Instance() {
-    static ServiceManager instance_;
+  static ServiceFactory* Instance() {
+    static ServiceFactory instance_;
     return &instance_;
   }
 
@@ -49,10 +49,10 @@ class ServiceManager {
  private:
   LOGGER_CLASS_DECL(logger);
 
-  ServiceManager();
-  ServiceManager(const ServiceManager& other);
-  ~ServiceManager();
-  ServiceManager& operator= (const ServiceManager& other);
+  ServiceFactory();
+  ServiceFactory(const ServiceFactory& other);
+  ~ServiceFactory();
+  ServiceFactory& operator= (const ServiceFactory& other);
 
   std::map<std::string, Service*> services_;
 };
