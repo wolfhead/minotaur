@@ -30,9 +30,9 @@ void ProtocolMessage::Dump(std::ostream& os) const {
 // LineMessage
 void LineMessage::Dump(std::ostream& os) const {
   os << "{\"type\": \"LineMessage\""
-     << ", \"type_id\": " << (int)type_id
-     << ", \"descriptor_id\": " << descriptor_id
-     << ", \"body\": \"" << body << "\""
+     << ", \"ProtocolMessage\": ";
+  ProtocolMessage::Dump(os);
+  os << ", \"body\": \"" << body << "\""
      << "}";
 }
 
@@ -40,9 +40,9 @@ void LineMessage::Dump(std::ostream& os) const {
 // RapidMessage
 void RapidMessage::Dump(std::ostream& os) const {
   os << "{\"type\": \"RapidMessage\""
-     << ", \"type_id\": " << (int)type_id
-     << ", \"descriptor_id\": " << descriptor_id
-     << ", \"cmd_id\": " << cmd_id
+     << ", \"ProtocolMessage\": ";
+  ProtocolMessage::Dump(os);   
+  os << ", \"cmd_id\": " << cmd_id
      << ", \"extra\": " << extra
      << ", \"body\": \"" << body << "\""
      << "}";
@@ -53,9 +53,9 @@ void RapidMessage::Dump(std::ostream& os) const {
 // HttpMessage
 void HttpMessage::Dump(std::ostream& os) const {
   os << "{\"type\": \"HttpMessage\""
-     << ", \"type_id\": " << (int)type_id
-     << ", \"descriptor_id\": " << descriptor_id
-     << ", \"http_major\": " << http_major
+     << ", \"ProtocolMessage\": ";
+  ProtocolMessage::Dump(os);      
+  os << ", \"http_major\": " << http_major
      << ", \"http_minor\": " << http_minor
      << ", \"status_code\": " << status_code
      << ", \"method\": " << method

@@ -114,6 +114,11 @@ void ClientChannel::OnConnect() {
 }
 
 int ClientChannel::EncodeMessage(ProtocolMessage* message) {
+  if (GetStatus() != kConnected) {
+    MI_LOG_DEBUG(logger, "ClientChannel::EncodeMessage ChannelBroker:" << GetStatus());
+    return -1;
+  }
+
   message->sequence_id = sequence_keeper_.GenerateSequenceId();
 
   if (!GetProtocol()->Encode(this, &write_buffer_, message)) {
@@ -145,6 +150,8 @@ void ClientChannel::OnDecodeMessage(ProtocolMessage* message) {
   message->sequence_id = keeper_message->sequence_id;
   message->descriptor_id = GetDescriptorId();
   message->payload = keeper_message->payload;
+
+  MI_LOG_TRACE(logger, "ClientChannel::OnDecodeMessage " << *message);
 
   MessageFactory::Destroy(keeper_message);
 

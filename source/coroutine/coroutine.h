@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <iostream>
 #include "../3rd-party/libcoro/coro.h"
+#include "../common/thread_id.h"
 #include "coro_context.h"
 
 namespace minotaur {
@@ -32,6 +33,9 @@ class Coroutine : public coro_context {
   inline Coroutine* GetNext() {return next_;}
 
   inline void Init() {
+#ifndef MINOTAUR_CORO_THREAD_CHECK
+    thread_id_ = ThreadId::Get();
+#endif
     coro_create(this, &Coroutine::Process, this, 
         this + 1, GetStackSize());
   }
@@ -57,6 +61,10 @@ class Coroutine : public coro_context {
   CoroutineFactory* coro_factory_;
   uint64_t coro_id_;
   uint32_t stack_size_;
+
+#ifdef MINOTAUR_CORO_THREAD_CHECK
+  uint32_t thread_id_;
+#endif  
 
  private:
   static void Process(void*); 

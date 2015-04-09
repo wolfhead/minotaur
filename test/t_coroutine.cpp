@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_SUITE(TestCoroutine);
 
 static int stub1 = (
     ThreadLocalCorotineFactory::GlobalInit(1024), 
-    CoroutineContext::Init(ThreadLocalCorotineFactory::Instance(), NULL, NULL), 
+    CoroutineContext::Init(ThreadLocalCorotineFactory::Instance(), NULL, NULL, NULL), 
     0);
 
 BOOST_AUTO_TEST_CASE(testRun) {
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(testThread) {
 
 BOOST_AUTO_TEST_CASE(testThread2) {
   auto proc = [](){
-    CoroutineContext::Init(ThreadLocalCorotineFactory::Instance(), NULL, NULL);
+    CoroutineContext::Init(ThreadLocalCorotineFactory::Instance(), NULL, NULL, NULL);
     CoroutineFactory factory(1024);
     Coroutine* c1 = factory.CreateCoroutine<Coroutine>();
 

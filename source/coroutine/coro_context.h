@@ -13,6 +13,7 @@ class Coroutine;
 class CoroScheduler;
 class CoroutineFactory;
 class IOService;
+class ServiceHandler;
 
 struct CoroutineContext {
  public:
@@ -26,10 +27,12 @@ struct CoroutineContext {
   static void Init(
       CoroutineFactory* factory,
       Timer* timer,
-      IOService* io_service) {
+      IOService* io_service,
+      ServiceHandler* handler) {
     Instance().factory_ = factory; 
     Instance().timer_ = timer;
     Instance().io_service_ = io_service;
+    Instance().handler_ = handler;
   }
 
   inline static CoroutineFactory* GetFactory() {
@@ -42,6 +45,10 @@ struct CoroutineContext {
 
   inline static IOService* GetIOService() {
     return Instance().io_service_;
+  }
+
+  inline static ServiceHandler* GetServiceHandler() {
+    return Instance().handler_;
   }
 
   inline static void SetCoroutine(Coroutine* coroutine) {
@@ -62,6 +69,7 @@ struct CoroutineContext {
     os << "io_service:" << Instance().io_service_
        << ", factory:" << Instance().factory_
        << ", timer:" << Instance().timer_
+       << ", handler:" << Instance().handler_
        << ", scheduler:" << Instance().scheduler_
        << ", coroutine:" << Instance().coroutine_
        << std::endl;
@@ -73,7 +81,8 @@ struct CoroutineContext {
       , scheduler_(NULL)
       , factory_(NULL)
       , timer_(NULL) 
-      , io_service_(NULL) {
+      , io_service_(NULL) 
+      , handler_(NULL) {
   }
 
   Coroutine* coroutine_;
@@ -81,6 +90,7 @@ struct CoroutineContext {
   CoroutineFactory* factory_;
   Timer* timer_;
   IOService* io_service_;
+  ServiceHandler* handler_;
 };
 
 } //namespace minotaur

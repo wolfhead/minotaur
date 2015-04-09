@@ -24,7 +24,8 @@ void CoroutineServiceHandler::Run(StageData<ServiceHandler>* data) {
   CoroutineContext::Init(
       ThreadLocalCorotineFactory::Instance(),
       &timer_,
-      GetIOService());
+      GetIOService(),
+      this);
 
   CoroScheduler* scheduler = coro::Spawn<CoroScheduler>();
   coro::SpawnAndSchedule<CoroTask>(
@@ -80,7 +81,7 @@ void CoroutineServiceHandler::ProcessMessage(StageData<ServiceHandler>* data) {
       actor = coro::Spawn<CoroService>(service);
       actor->SendMail(message);
     } else {
-      CoroActor* actor = coro::GetCoroutine<CoroActor>(message->GetPayloadAs<uint64_t>());
+      actor = coro::GetCoroutine<CoroActor>(message->GetPayloadAs<uint64_t>());
       if (!actor) {
         LOG_ERROR(logger, "CoroutineServiceHandler::ProcessMessage Coroutine is gone:" 
             << message->GetPayloadAs<uint64_t>());
@@ -88,7 +89,9 @@ void CoroutineServiceHandler::ProcessMessage(StageData<ServiceHandler>* data) {
       } 
       actor->SendMail(message);
     }
-
+    //LOG_TRACE(logger, "test");
+    LOG_WARN(logger, "schedule:" << actor->GetCoroutineId() << ", message:" << *message);
+    //coro::Transfer(actor);
     coro::Schedule(actor);
   }  
 }

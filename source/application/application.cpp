@@ -16,6 +16,7 @@
 #include "../net/acceptor.h"
 #include "../net/io_descriptor_factory.h"
 #include "../service/service.h"
+#include "../client/client_manager.h"
 
 namespace minotaur {
 
@@ -24,6 +25,7 @@ LOGGER_CLASS_IMPL(logger, Application);
 Application::Application() 
     : logger_watcher_(NULL)
     , config_manager_(NULL)
+    , client_manager_(NULL)
     , help_mode_(false)
     , daemon_mode_(false) {
 }
@@ -36,6 +38,10 @@ Application::~Application() {
   if (config_manager_) {
     delete config_manager_;
     config_manager_ = NULL;
+  }
+  if (client_manager_) {
+    delete client_manager_;
+    client_manager_ = NULL;
   }
 }
 
@@ -52,8 +58,6 @@ int Application::Run(int argc, char* argv[]) {
     return -1;
   }
 
-  DumpStatus(std::cout);
-
   if (0 != StartLogger()) {
     return -1;
   }
@@ -62,7 +66,13 @@ int Application::Run(int argc, char* argv[]) {
     return -1;
   }
 
+  DumpStatus(std::cout);
+
   if (0 != StartIOService()) {
+    return -1;
+  }
+
+  if (0 != StartClientManager()) {
     return -1;
   }
 
@@ -70,7 +80,7 @@ int Application::Run(int argc, char* argv[]) {
     return -1;
   }
 
-  if (0 != StartService()) {
+  if (0 != StartServiceManager()) {
     return -1;
   }
 
@@ -80,7 +90,9 @@ int Application::Run(int argc, char* argv[]) {
 
   OnStop();
 
-  StopService();
+  StopServiceManager();
+
+  StopClientManager();
 
   StopIOService();
     
@@ -95,6 +107,10 @@ void Application::DumpStatus(std::ostream& os) const {
      << "application_config: " << application_config_ << std::endl
      << "help_mode: " << (help_mode_ ? "true" : "false") << std::endl
      << "daemon_mode: " << (daemon_mode_ ? "true" : "false") << std::endl;
+  if (config_manager_) {
+    os << "========== ConfigManager ========" << std::endl;
+    config_manager_->Dump(os);
+  }
 }
 
 int Application::ParseCmd(int argc, char* argv[]) {
@@ -193,9 +209,41 @@ int Application::StartIOService() {
   return 0;
 }
 
-int Application::StartService() {
+int Application::StartClientManager() {
   if (!config_manager_) {
-    MI_LOG_DEBUG(logger, "Application::StartService no config set, ignore");
+    MI_LOG_DEBUG(logger, "Application::StartClientManager no config set, ignore");
+    return 0;
+  }
+
+  ClientManager* client_manager = new ClientManager(GetIOService());
+  for (const auto& router_config : config_manager_->GetClientRoutersConfig()) {
+    for (const auto& client_config : router_config.clients) {
+      for (int i = 0; i != client_config.count; ++i) {
+        if (0 != client_manager->AddClient(router_config.name, client_config.address, client_config.timeout)) {
+          LOG_ERROR(logger, "Application::StartClientManager AddClient fail"
+              << ", name:" << router_config.name
+              << ", address:" << client_config.address
+              << ", timeout:" << client_config.timeout);
+          delete client_manager;
+          return -1;
+        }
+      }
+    }
+  }
+
+  if (0 != client_manager->Start()) {
+    LOG_ERROR(logger, "Application::StartClientManager Start fail");
+    delete client_manager;
+    return -1;
+  }
+
+  client_manager_ = client_manager;
+  return 0;
+}
+
+int Application::StartServiceManager() {
+  if (!config_manager_) {
+    MI_LOG_DEBUG(logger, "Application::StartServiceManager no config set, ignore");
     return 0;
   }
 
@@ -203,20 +251,20 @@ int Application::StartService() {
     Acceptor* acceptor = IODescriptorFactory::Instance()
       .CreateAcceptor(GetIOService(), service_config.address, service_config.name);
     if (!acceptor) {
-      MI_LOG_ERROR(logger, "Application::StartService CreateAcceptor fail"
+      MI_LOG_ERROR(logger, "Application::StartServiceManager CreateAcceptor fail"
           << ", address:" << service_config.address
           << ", name:" << service_config.name);
       return -1;
     }
 
     if (0 != acceptor->Start()) {
-      MI_LOG_ERROR(logger, "Application::StartService Start Acceptor fail"
+      MI_LOG_ERROR(logger, "Application::StartServiceManager Start Acceptor fail"
           << ", address:" << service_config.address
           << ", name:" << service_config.name);
       IODescriptorFactory::Instance().Destroy(acceptor);
       return -1;
     } else {
-      MI_LOG_INFO(logger, "Application::StartService"
+      MI_LOG_INFO(logger, "Application::StartServiceManager"
           << ", address:" << service_config.address
           << ", service:" << service_config.name);
     }
@@ -231,9 +279,16 @@ int Application::RunIOService() {
   return 0;
 }
 
-int Application::StopService() {
+int Application::StopServiceManager() {
   for (Acceptor* acceptor : acceptor_) {
     IODescriptorFactory::Instance().Destroy(acceptor);
+  }
+  return 0;
+}
+
+int Application::StopClientManager() {
+  if (client_manager_) {
+    return client_manager_->Stop();
   }
   return 0;
 }

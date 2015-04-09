@@ -13,7 +13,7 @@ class IOService;
 class Handler {
  public:
   enum {
-    kUnspecifiedId = 0,
+    kUnspecifiedId = 0xFFFF,
   };
 
   Handler() : io_service_(NULL) {}
@@ -23,9 +23,13 @@ class Handler {
   virtual ~Handler() {}
 
   void SetIOService(IOService* service) {io_service_ = service;}
-  IOService* GetIOService() {return io_service_;}
+  IOService* GetIOService() const {return io_service_;}
+
+  void SetHandlerId(uint32_t handler_id) {handler_id_ = handler_id;}
+  uint16_t GetHandlerId() const {return handler_id_;}
 
  private:
+  uint16_t handler_id_;
   IOService* io_service_;
 };
 

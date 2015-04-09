@@ -12,6 +12,7 @@ namespace minotaur {
 
 class ServiceHandler;
 class ServiceManager;
+class ClientManager;
 class ConfigManager;
 class Acceptor;
 
@@ -25,7 +26,7 @@ class Application {
 
   ConfigManager* GetConfigManager() {return config_manager_;}
 
-  ServiceManager* GetServiceManager() {return service_manager_;}
+  ClientManager* GetClientManager() {return client_manager_;}
 
   int Run(int argc, char* argv[]);
   
@@ -55,11 +56,15 @@ class Application {
 
   int StartIOService();
 
-  int StartService();
+  int StartClientManager();
+
+  int StartServiceManager();
 
   int RunIOService();
 
-  int StopService();
+  int StopClientManager();
+
+  int StopServiceManager();
 
   int StopIOService();
 
@@ -68,7 +73,7 @@ class Application {
   IOServiceConfig io_service_config_;
 
   ConfigManager* config_manager_;
-  ServiceManager* service_manager_;
+  ClientManager* client_manager_;
 
   bool help_mode_;
   bool daemon_mode_;

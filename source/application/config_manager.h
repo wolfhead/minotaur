@@ -14,9 +14,21 @@ struct ServiceConfig {
   std::string name;
 };
 
+struct ClientConfig {
+  std::string address;
+  uint32_t timeout;
+  int count;
+};
+
+struct ClientRouterConfig {
+  std::string name;
+  std::vector<ClientConfig> clients;
+};
+
 class ConfigManager {
  public:
   typedef std::vector<ServiceConfig> ServicesConfig;
+  typedef std::vector<ClientRouterConfig> ClientRoutersConfig;
 
   ConfigManager();
   virtual ~ConfigManager();
@@ -27,6 +39,10 @@ class ConfigManager {
 
   ServicesConfig GetServicesConfig() {return services_config_;}
 
+  ClientRoutersConfig GetClientRoutersConfig() {return client_routers_config_;}
+
+  virtual void Dump(std::ostream& os) const;
+
  protected:
   virtual int LoadIOServiceConfig(tinyxml2::XMLElement* element, IOServiceConfig* config);
 
@@ -34,12 +50,16 @@ class ConfigManager {
 
   virtual int LoadServicesConfig(tinyxml2::XMLElement*, ServicesConfig* config);
 
+  virtual int LoadClientRoutersConfig(tinyxml2::XMLElement*, ClientRoutersConfig* config);
+
  private:
   LOGGER_CLASS_DECL(logger);
 
   IOServiceConfig io_service_config_;
 
   ServicesConfig services_config_;
+
+  ClientRoutersConfig client_routers_config_;
 };
 
 } //namespace minotaur

@@ -5,6 +5,7 @@
  * @author Wolfhead
  */
 #include <stdint.h>
+#include <unistd.h>
 #include <sys/syscall.h>
 
 namespace minotaur {

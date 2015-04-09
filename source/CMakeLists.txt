@@ -56,6 +56,10 @@ set(MINOTAUR_SOURCE
   service/coroutine_service_handler.cpp
   service/service.cpp
 
+  client/client.cpp
+  client/client_router.cpp
+  client/client_manager.cpp
+
   application/application.cpp
   application/config_manager.cpp
 

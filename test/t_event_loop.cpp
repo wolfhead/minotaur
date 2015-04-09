@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   BOOST_CHECK_EQUAL(0, ret);
 
   ClientChannel* rapid_connector = IODescriptorFactory::Instance()
-    .CreateClientChannel(&io_service, "rapid://localhost:6602", 2000);
+    .CreateClientChannel(&io_service, "rapid://localhost:6604", 2000);
   ret = rapid_connector->Start();
 
   ClientChannel* line_connector = IODescriptorFactory::Instance()
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   BOOST_CHECK_EQUAL(0, ret);
 
-  int i = 1;
+  int i = 0;
   while (i--) {
     sleep(2);
 

@@ -9,13 +9,6 @@
     stack_size="2048" />
 
   <services>
-    <service address="http://0.0.0.0:6600" name="http_echo_handler"/>
+    <service address="rapid://0.0.0.0:6601" name="rapid_echo_handler"/>
   </services>
-
-  <clients>
-    <router name="rapid">
-      <client address="rapid://0.0.0.0:6601" timeout="1000" count="5"/>
-    </router>
-  </clients>
-
 </config>

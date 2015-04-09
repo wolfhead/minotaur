@@ -80,6 +80,7 @@ template<typename T>
 typename Timer<T>::NodeType* Timer<T>::ProcessTimer() {
   uint64_t current_process_time = Time::GetMillisecond();
   uint32_t ticks = (current_process_time - last_process_time_) / per_tick_;
+  if (ticks == 0) return NULL;
   if (ticks > total_ticks_) ticks = 1;
 
   last_process_time_ = current_process_time;

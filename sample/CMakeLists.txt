@@ -18,6 +18,9 @@ link_libraries(
 add_executable(http_echo_server
   http_echo_server.cpp)
 
+add_executable(rapid_echo_server
+  rapid_echo_server.cpp)
+
 add_custom_target(sample_copy_config
   COMMAND cp -f ${CMAKE_CURRENT_SOURCE_DIR}/*.properties ${CMAKE_CURRENT_BINARY_DIR}/
   COMMAND cp -f ${CMAKE_CURRENT_SOURCE_DIR}/*.xml ${CMAKE_CURRENT_BINARY_DIR}/

@@ -44,6 +44,8 @@ struct IOServiceConfig {
   ServiceHandler* service_handler_prototype;
 
   uint32_t stack_size;
+
+  void Dump(std::ostream& os) const;
 };
 
 class IOService {
@@ -85,6 +87,8 @@ class IOService {
   static void StopCurrentIOService(int signal);
   static volatile IOService* current_;
 };
+
+std::ostream& operator << (std::ostream& os, const IOServiceConfig& config);
 
 } //namespace minotaur
 

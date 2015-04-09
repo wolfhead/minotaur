@@ -8,6 +8,7 @@
 #include "../io_service.h"
 #include "../stage.h"
 #include "../net/io_handler.h"
+#include "../service/service_handler.h"
 
 namespace minotaur { namespace coro {
 
@@ -19,6 +20,10 @@ inline T* GetCoroutine(uint64_t id) {
 template<typename T = Coroutine>
 inline T* Current() {
   return (T*)CoroutineContext::GetCoroutine();
+}
+
+inline ServiceHandler* CurrentHandler() {
+  return CoroutineContext::GetServiceHandler();
 }
 
 inline CoroScheduler* Scheduler() {
@@ -61,11 +66,17 @@ inline void CancelTimer(uint64_t timer_id) {
   CoroutineContext::GetTimer()->CancelTimer(timer_id);
 }
 
+inline void SendMail(Coroutine* coro, ProtocolMessage* message) {
+  ((CoroActor*)coro)->SendMail(message);
+}
+
 inline bool Send(const EventMessage& message) {
   return CoroutineContext::GetIOService()->GetIOStage()->Send(message);
 }
 
 inline bool Send(ProtocolMessage* message) {
+  message->handler_id = CurrentHandler()->GetHandlerId(); 
+  message->payload.coroutine_id = Current()->GetCoroutineId();
   return coro::Send(EventMessage(
         minotaur::MessageType::kIOMessageEvent, 
         message->descriptor_id, 

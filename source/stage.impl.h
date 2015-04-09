@@ -30,7 +30,9 @@ template<typename HandlerType>
 int Stage<HandlerType>::Start() {
   for (uint16_t i = 0; i != worker_count_; ++i) {
     HandlerType* handler = prototype_->Clone();
-    uint16_t handler_id = i + 1;
+    uint16_t handler_id = i;
+
+    handler->SetHandlerId(handler_id);
 
     StageDataType* stage_data = new StageDataType;
     stage_data->queue = new MessageQueueType(queue_size_);

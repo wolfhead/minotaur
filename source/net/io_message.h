@@ -40,6 +40,7 @@ class ProtocolMessage : public MessageBase {
   uint64_t descriptor_id;
   union {
     uint64_t data;
+    uint64_t coroutine_id;
     Service* service;
   } payload;
   // for book-keeper

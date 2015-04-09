@@ -15,6 +15,10 @@ ConfigManager::ConfigManager() {
 ConfigManager::~ConfigManager() {
 }
 
+void ConfigManager::Dump(std::ostream& os) const {
+  os << "IOServiceConfig:" << io_service_config_ << std::endl;
+}
+
 int ConfigManager::LoadConfig(const std::string& config_path) {
   tinyxml2::XMLDocument xml_doc;
   if (0 != xml_doc.LoadFile(config_path.c_str())) {
@@ -29,6 +33,10 @@ int ConfigManager::LoadConfig(const std::string& config_path) {
   }
 
   if (0 != LoadServicesConfig(root_element->FirstChildElement("services"), &services_config_)) {
+    return -1;
+  }
+
+  if (0 != LoadClientRoutersConfig(root_element->FirstChildElement("clients"), &client_routers_config_)) {
     return -1;
   }
 
@@ -84,8 +92,8 @@ int ConfigManager::LoadIOServiceConfig(tinyxml2::XMLElement* element, IOServiceC
 
 int ConfigManager::LoadServicesConfig(tinyxml2::XMLElement* element, ServicesConfig* config) {
   if (!element) {
-    MI_LOG_ERROR(logger, "ConfigManager::LoadServicesConfig no element");
-    return -1;
+    MI_LOG_WARN(logger, "ConfigManager::LoadServicesConfig no element");
+    return 0;
   }
 
   tinyxml2::XMLElement* service = element->FirstChildElement("service");
@@ -97,6 +105,39 @@ int ConfigManager::LoadServicesConfig(tinyxml2::XMLElement* element, ServicesCon
 
     services_config_.push_back(service_config);
     service = service->NextSiblingElement("service");
+  }
+
+  return 0;
+}
+
+int ConfigManager::LoadClientRoutersConfig(tinyxml2::XMLElement* element, ClientRoutersConfig* config) {
+  if (!element) {
+    MI_LOG_WARN(logger, "ConfigManager::LoadClientRoutersConfig no element");
+    return 0;
+  }
+
+  tinyxml2::XMLElement* router = element->FirstChildElement("router");
+  while (router) {
+    ClientRouterConfig router_config;
+    XML_LOAD_STRING(router, "name", router_config.name, -1);
+
+    tinyxml2::XMLElement* client = router->FirstChildElement("client");
+    while (client) {
+      ClientConfig client_config;
+      int tmp;
+      XML_LOAD_STRING(client, "address", client_config.address, -1);
+      XML_LOAD_INT(client, "timeout", &tmp, -1); 
+      client_config.timeout = tmp;
+      XML_LOAD_INT(client, "count", &tmp, -1);
+      client_config.count = tmp;
+
+      router_config.clients.push_back(client_config);
+
+      client = client->NextSiblingElement("client");
+    }
+
+    config->push_back(router_config);
+    router = router->NextSiblingElement("router");
   }
 
   return 0;

@@ -17,26 +17,14 @@ LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 int main(int argc, char* argv[]) {
   GenericApplication<ConfigManager, CoroutineServiceHandler> app;
-  Client client(app.GetIOService(), "rapid://localhost:6602", 1000);
-
   return 
     app
       .SetOnStart([&](){
-        client.Start();
-
-        app.RegisterService("http_echo_handler", [&](ProtocolMessage* message) {
-          //coro::StartTimer(10000);
-          //coro::Yield();
-          //ClientRouter* router = app.GetClientManager()->GetClientRouter("rapid");
-          RapidMessage* rapid_message = MessageFactory::Allocate<RapidMessage>();
-          rapid_message->body = "test";
-
-          RapidMessage* response = client.SendRecieve(rapid_message);
-          if (response) {
-            LOG_INFO(logger, "rapid response:" << response->body);
-          }
+        app.RegisterService("rapid_echo_handler", [](ProtocolMessage* message){
+          LOG_INFO(logger, "rapid request:" << ((RapidMessage*)message)->body);
           coro::Send(message);
         });
+
         return 0;
       })
       .Run(argc, argv);

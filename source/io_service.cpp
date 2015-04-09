@@ -17,6 +17,18 @@ namespace minotaur {
 LOGGER_CLASS_IMPL_NAME(logger, IOService, "IOService");
 volatile IOService* IOService::current_ = NULL;
 
+void IOServiceConfig::Dump(std::ostream& os) const {
+  os << "{\"type\": \"IOServiceConfig\""
+     << ", \"fd_count\": " << fd_count
+     << ", \"event_loop_worker\": " << event_loop_worker
+     << ", \"io_worker\": " << io_worker
+     << ", \"io_queue_size\": " << io_queue_size
+     << ", \"service_worker\": " << service_worker
+     << ", \"service_queue_size\": " << service_queue_size
+     << ", \"stack_size\": " << stack_size
+     << "}";
+}
+
 IOService::IOService() 
     : event_loop_stage_(NULL)
     , io_stage_(NULL)
@@ -127,6 +139,11 @@ void IOService::StopCurrentIOService(int signal) {
     IOService* current = (IOService*)current_;
     current->Stop();
   }
+}
+
+std::ostream& operator << (std::ostream& os, const IOServiceConfig& config) {
+  config.Dump(os);
+  return os;
 }
 
 } //namespace minotaur
