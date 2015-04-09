@@ -34,18 +34,27 @@ class GenericApplication : public Application {
 
   template<typename T>
   int StartService(const std::string& address, const T& functor) {
-    if (0 != ServiceManager::Instance()->RegisterService(address, CreateService(functor))) {
+    if (0 != RegisterService(address, functor)) {
       return -1;
     }
 
     Acceptor* acceptor = IODescriptorFactory::Instance()
       .CreateAcceptor(GetIOService(), address, address);
+    if (!acceptor) {
+      return -1;
+    }
+
     if (0 != acceptor->Start()) {
       IODescriptorFactory::Instance().Destroy(acceptor);
       return -1;
     }
 
     return 0;
+  }
+
+  template<typename T>
+  int RegisterService(const std::string& name, const T& functor) {
+    return ServiceFactory::Instance()->RegisterService(name, CreateService(functor));
   }
 
  protected:
