@@ -66,6 +66,8 @@ class Application {
 
   int StopServiceManager();
 
+  int StopService();
+
   int StopIOService();
 
   log4cplus::ConfigureAndWatchThread* logger_watcher_;

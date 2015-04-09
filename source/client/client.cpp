@@ -7,6 +7,7 @@
 #include "../net/io_descriptor_factory.h"
 #include "../net/client_channel.h"
 #include "../service/service_handler.h"
+#include "../net/io_descriptor_factory.h"
 
 namespace minotaur {
 
@@ -70,8 +71,6 @@ ProtocolMessage* Client::DoSendRecieve(ProtocolMessage* message, uint32_t timeou
   CoroutineContext::GetIOService()->GetServiceStage()->Send(message);
 
   return coro::Recieve();
-
-  //return coro::SendRevieve(message, timeout_ms);
 }
 
 } //namespace minotaur
