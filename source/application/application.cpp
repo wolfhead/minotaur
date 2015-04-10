@@ -186,6 +186,7 @@ int Application::LoadConfig() {
     io_service_config_.io_worker = 1;
     io_service_config_.service_queue_size = 128 * 1024;
     io_service_config_.service_worker = 1;
+    io_service_config_.stack_size = 2048;
   }
 
   io_service_config_.service_handler_prototype = CreateServiceHandler();

@@ -57,20 +57,38 @@ int Client::Stop() {
   return ret;
 }
 
+void Client::Dump(std::ostream& os) const {
+  os << "{\"type\": \"Client\""
+     << ", \"address\": \"" << address_ << "\""
+     << ", \"timeout\": " << timeout_ms_
+     << "}" << std::endl;
+}
+
 bool Client::Send(ProtocolMessage* message) {
+  if (GetStatus() != kWorking) {
+    MI_LOG_TRACE(logger, "Client::Send Channel Broken" << *this);
+    return false;
+  }
+
   message->descriptor_id = channel_->GetDescriptorId();
+  message->direction = ProtocolMessage::kOutgoingRequest;
   return coro::Send(message);
 }
 
 ProtocolMessage* Client::DoSendRecieve(ProtocolMessage* message, uint32_t timeout_ms) {
+  if (GetStatus() != kWorking) {
+    MI_LOG_TRACE(logger, "Client::Send Channel Broken" << *this);
+    return NULL;   
+  }
+
   message->descriptor_id = channel_->GetDescriptorId();
   message->direction = ProtocolMessage::kOutgoingRequest;
-  message->handler_id = coro::CurrentHandler()->GetHandlerId(); 
-  message->payload.coroutine_id = coro::Current()->GetCoroutineId();
-  std::cout << "payload:" << message->payload.coroutine_id << std::endl; 
-  CoroutineContext::GetIOService()->GetServiceStage()->Send(message);
+  return coro::SendRecieve(message, timeout_ms);
+}
 
-  return coro::Recieve();
+std::ostream& operator << (std::ostream& os, const Client& client) {
+  client.Dump(os);
+  return os;
 }
 
 } //namespace minotaur

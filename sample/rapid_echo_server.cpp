@@ -21,10 +21,8 @@ int main(int argc, char* argv[]) {
     app
       .SetOnStart([&](){
         app.RegisterService("rapid_echo_handler", [](ProtocolMessage* message){
-          LOG_INFO(logger, "rapid request:" << ((RapidMessage*)message)->body);
           coro::Send(message);
         });
-
         return 0;
       })
       .Run(argc, argv);

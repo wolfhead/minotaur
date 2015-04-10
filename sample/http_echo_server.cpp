@@ -20,7 +20,18 @@ int main(int argc, char* argv[]) {
   return 
     app
       .SetOnStart([&](){
-        return app.RegisterService("http_echo_handler", [](ProtocolMessage* message){
+        ClientRouter* rapid_client = app.GetClientManager()->GetClientRouter("rapid");
+
+        return app.RegisterService("http_echo_handler", [=](ProtocolMessage* message){
+          RapidMessage* rapid_message = MessageFactory::Allocate<RapidMessage>();
+
+          RapidMessage* response = rapid_client->SendRecieve(rapid_message);
+          if (response) {
+            LOG_INFO(logger, "OnResponse:" << *response);
+          } else {
+            LOG_ERROR(logger, "fail");
+          }
+
           coro::Send(message);
         });
       })

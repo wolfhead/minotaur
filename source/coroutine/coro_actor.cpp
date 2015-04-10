@@ -12,18 +12,13 @@ ProtocolMessage* CoroActor::RecieveMail(uint32_t timeout_ms) {
   uint64_t timer_id = 0;
 
   if (mailbox_.empty()) {
-    coro::Yield();
-    std::cout << "after yeild: " << this->GetCoroutineId() << std::endl;
-  }
-  /*
-  if (mailbox_.empty()) {
     if (timeout_ms) {
       timer_id = coro::StartTimer(timeout_ms);
     }
+    Yield();
   }
 
   coro::CancelTimer(timer_id);
-  */
 
   if (!mailbox_.empty()) {
     ProtocolMessage* message = mailbox_.front();

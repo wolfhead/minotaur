@@ -17,7 +17,6 @@ class CoroScheduler : public Coroutine {
   }
 
   inline void Schedule(Coroutine* coro) {
-    std::cout << "try schedule:" << coro->GetCoroutineId() << std::endl;
     task_.push_back(coro);
   }
 
@@ -30,7 +29,6 @@ class CoroScheduler : public Coroutine {
     Coroutine* coro = task_.front();
     while (coro) {
       task_.pop_front();
-      std::cout << "schedule:" << coro->GetCoroutineId() << std::endl;
       Transfer(coro);
       coro = task_.front();
     }

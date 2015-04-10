@@ -17,7 +17,6 @@ void ProtocolMessage::Dump(std::ostream& os) const {
      << ", \"direction\": " << direction
      << ", \"handler_id\": " << handler_id
      << ", \"sequence_id\": " << sequence_id
-     << ", \"descriptor_id\": " << descriptor_id
      << ", \"payload\": " << payload.data
      << ", \"next_\": " << next_
      << ", \"prev_\": " << prev_

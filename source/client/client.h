@@ -49,7 +49,7 @@ class Client {
 
   uint32_t GetTimeout() const {return timeout_ms_;}
 
-  void Dump(std::ostream& os);
+  void Dump(std::ostream& os) const;
 
  private:
   LOGGER_CLASS_DECL(logger);
@@ -62,6 +62,8 @@ class Client {
 
   ClientChannel* channel_;
 };
+
+std::ostream& operator << (std::ostream& os, const Client& client);
 
 } //namespace minotaur
 

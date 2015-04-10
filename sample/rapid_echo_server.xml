@@ -6,7 +6,7 @@
     io_worker="1"
     service_queue_size="131072"
     service_worker="1"
-    stack_size="2048" />
+    stack_size="16384" />
 
   <services>
     <service address="rapid://0.0.0.0:6601" name="rapid_echo_handler"/>

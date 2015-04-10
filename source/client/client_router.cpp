@@ -73,7 +73,6 @@ ProtocolMessage* ClientRouter::DoSendRecieveHash(ProtocolMessage* message, uint3
 }
 
 Client* ClientRouter::GetNextClient() {
-  return clients_[0];
   for (size_t i = 0; i != clients_.size(); ++i) {
     uint32_t current = (++current_ % clients_.size());
     if (clients_[current]->GetStatus() == Client::kWorking) {

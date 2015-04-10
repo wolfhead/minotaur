@@ -87,7 +87,7 @@ inline ProtocolMessage* Recieve(uint32_t timeout_ms = 0) {
   return ((CoroActor*)Current())->RecieveMail(timeout_ms);
 }
 
-inline ProtocolMessage* SendRevieve(ProtocolMessage* message, uint32_t timeout_ms = 0) {
+inline ProtocolMessage* SendRecieve(ProtocolMessage* message, uint32_t timeout_ms = 0) {
   if (!Send(message)) return NULL;
   return Recieve(timeout_ms);
 }

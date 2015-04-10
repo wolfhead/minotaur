@@ -83,15 +83,13 @@ void CoroutineServiceHandler::ProcessMessage(StageData<ServiceHandler>* data) {
     } else {
       actor = coro::GetCoroutine<CoroActor>(message->GetPayloadAs<uint64_t>());
       if (!actor) {
-        LOG_ERROR(logger, "CoroutineServiceHandler::ProcessMessage Coroutine is gone:" 
-            << message->GetPayloadAs<uint64_t>());
+        LOG_ERROR(logger, "CoroutineServiceHandler::ProcessMessage Coroutine is gone" 
+            << ", coro_id: " << message->GetPayloadAs<uint64_t>()
+            << ", message:" << *message);
         continue;
       } 
       actor->SendMail(message);
     }
-    //LOG_TRACE(logger, "test");
-    LOG_WARN(logger, "schedule:" << actor->GetCoroutineId() << ", message:" << *message);
-    //coro::Transfer(actor);
     coro::Schedule(actor);
   }  
 }
