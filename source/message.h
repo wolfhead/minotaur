@@ -51,6 +51,7 @@ class MessageBase {
   MessageBase(uint8_t type_id) 
       : type_id(type_id) {
   }
+
   virtual ~MessageBase() {};
 
   std::string ToString() const;
