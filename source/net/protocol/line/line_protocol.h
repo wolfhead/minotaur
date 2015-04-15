@@ -23,6 +23,10 @@ class LineProtocol : public Protocol {
       IOBuffer* buffer,
       ProtocolMessage* message);
 
+  virtual ProtocolMessage* HeartBeatRequest();
+
+  virtual ProtocolMessage* HeartBeatResponse(ProtocolMessage* request);
+
   virtual Protocol* Clone() {
     return this;
   }

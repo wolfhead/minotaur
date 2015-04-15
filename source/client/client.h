@@ -24,7 +24,8 @@ class Client {
   Client(
       IOService* io_service, 
       const std::string& address, 
-      uint32_t timeout_ms);
+      uint32_t timeout_ms,
+      uint32_t heartbeat_ms);
 
   ~Client();
 
@@ -49,6 +50,8 @@ class Client {
 
   uint32_t GetTimeout() const {return timeout_ms_;}
 
+  uint32_t GetHeartBeat() const {return heartbeat_ms_;}
+
   void Dump(std::ostream& os) const;
 
  private:
@@ -59,6 +62,7 @@ class Client {
   IOService* io_service_;
   std::string address_;
   uint32_t timeout_ms_; 
+  uint32_t heartbeat_ms_;
 
   ClientChannel* channel_;
 };

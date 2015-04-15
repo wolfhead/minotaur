@@ -7,6 +7,7 @@
 #include "../io_service.h"
 #include "../stage.h"
 #include "../service/service_handler.h"
+#include "protocol/protocol.h"
 
 namespace minotaur {
 
@@ -18,6 +19,15 @@ ServiceChannel::ServiceChannel(IOService* io_service, int fd, Service* service)
 }
 
 void ServiceChannel::OnDecodeMessage(ProtocolMessage* message) {
+  if (message->direction == ProtocolMessage::kHeartBeat) {
+    ProtocolMessage* heartbeat_response = GetProtocol()->HeartBeatResponse(message);
+    if (0 != EncodeMessage(heartbeat_response)) {
+      MessageFactory::Destroy(heartbeat_response);
+    }
+    return;
+  }
+
+
   message->status = ProtocolMessage::kStatusOK;
   message->direction = ProtocolMessage::kIncomingRequest;
   message->handler_id = Handler::kUnspecifiedId;

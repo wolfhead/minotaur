@@ -37,7 +37,11 @@ int ClientManager::Stop() {
   return 0;
 }
 
-int ClientManager::AddClient(const std::string& name, const std::string& address, uint32_t timeout_ms) {
+int ClientManager::AddClient(
+    const std::string& name, 
+    const std::string& address, 
+    uint32_t timeout_ms, 
+    uint32_t heartbeat_ms) {
   ClientRouter* client_router = NULL;
   if (router_.find(name) != router_.end()) {
     client_router = router_[name];
@@ -46,7 +50,7 @@ int ClientManager::AddClient(const std::string& name, const std::string& address
     router_[name] = client_router;
   }
 
-  return client_router->AddClient(address, timeout_ms);
+  return client_router->AddClient(address, timeout_ms, heartbeat_ms);
 }
 
 ClientRouter* ClientManager::GetClientRouter(const std::string& name) {

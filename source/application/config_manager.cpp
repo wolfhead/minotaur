@@ -128,6 +128,8 @@ int ConfigManager::LoadClientRoutersConfig(tinyxml2::XMLElement* element, Client
       XML_LOAD_STRING(client, "address", client_config.address, -1);
       XML_LOAD_INT(client, "timeout", &tmp, -1); 
       client_config.timeout = tmp;
+      XML_LOAD_INT_DEFAULT(client, "heartbeat", &tmp, 0);
+      client_config.heartbeat = tmp;
       XML_LOAD_INT(client, "count", &tmp, -1);
       client_config.count = tmp;
 

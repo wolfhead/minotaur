@@ -66,6 +66,11 @@ inline void CancelTimer(uint64_t timer_id) {
   CoroutineContext::GetTimer()->CancelTimer(timer_id);
 }
 
+inline void Sleep(uint64_t time_ms) {
+  StartTimer(time_ms);
+  Yield();
+}
+
 inline void SendMail(Coroutine* coro, ProtocolMessage* message) {
   ((CoroActor*)coro)->SendMail(message);
 }

@@ -220,7 +220,9 @@ int Application::StartClientManager() {
   for (const auto& router_config : config_manager_->GetClientRoutersConfig()) {
     for (const auto& client_config : router_config.clients) {
       for (int i = 0; i != client_config.count; ++i) {
-        if (0 != client_manager->AddClient(router_config.name, client_config.address, client_config.timeout)) {
+        if (0 != client_manager->AddClient(
+              router_config.name, client_config.address, 
+              client_config.timeout, client_config.heartbeat)) {
           LOG_ERROR(logger, "Application::StartClientManager AddClient fail"
               << ", name:" << router_config.name
               << ", address:" << client_config.address

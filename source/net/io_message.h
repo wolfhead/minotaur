@@ -19,10 +19,12 @@ class ProtocolMessage : public MessageBase {
     kOutgoingRequest,
     kIncomingResponse,
     kOutgoingResponse,
+    kHeartBeat,
   };
 
   enum {
     kStatusOK = 0,
+    kStatusTimeout,
     kInternalFailure,
   };
 
@@ -65,9 +67,8 @@ class RapidMessage : public ProtocolMessage {
  public:
   enum {
     kDataType = 0,
-    kPingType = 1,
-    kPongType = 2,
-    kOneway = 3,
+    kHeartBeatType = 1,
+    kOneway = 2,
   };
 
   RapidMessage() {

@@ -17,6 +17,7 @@ struct ServiceConfig {
 struct ClientConfig {
   std::string address;
   uint32_t timeout;
+  uint32_t heartbeat;
   int count;
 };
 

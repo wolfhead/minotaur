@@ -42,6 +42,10 @@ ProtocolMessage* RapidProtocol::Decode(
 
   RapidMessage* message = MessageFactory::Allocate<RapidMessage>();
 
+  if (header->type == RapidMessage::kHeartBeatType) {
+    message->direction = ProtocolMessage::kHeartBeat;
+  }
+
   message->sequence_id = header->seqid;
   message->cmd_id = header->cmdid;
   message->extra = header->extra;
@@ -64,10 +68,15 @@ bool RapidProtocol::Encode(
   uint32_t package_size = 
       sizeof(RapidHeader) + rapid_message->body.size();
 
+  uint8_t message_type = RapidMessage::kDataType;
+  if (message->direction == ProtocolMessage::kHeartBeat) {
+    message_type = RapidMessage::kHeartBeatType;
+  }
+
   RapidHeader header = {
     .size = package_size,
     .seqid = rapid_message->sequence_id,
-    .type = RapidMessage::kDataType,
+    .type = message_type,
     .version = 0,
     .cmdid = rapid_message->cmd_id,
     .extra = rapid_message->extra,
@@ -76,6 +85,16 @@ bool RapidProtocol::Encode(
   buffer->Write((const char*)&header, sizeof(RapidHeader));
   buffer->Write(rapid_message->body.data(), rapid_message->body.size());
   return true;
+}
+
+ProtocolMessage* RapidProtocol::HeartBeatRequest() {
+  RapidMessage* rapid_message = MessageFactory::Allocate<RapidMessage>();
+  rapid_message->direction = ProtocolMessage::kHeartBeat;
+  return rapid_message;
+}
+
+ProtocolMessage* RapidProtocol::HeartBeatResponse(ProtocolMessage* message) {
+  return message;
 }
 
 } //namespace minotaur

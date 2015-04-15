@@ -35,6 +35,7 @@
     }                                                                 \
   } while (0);                                                        \
 
+
 #define XML_LOAD_INT_DEFAULT(xml, name, value, default_value)         \
   do {                                                                \
     if (0 != xml->QueryIntAttribute(name, value)) {                   \

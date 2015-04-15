@@ -53,7 +53,8 @@ class IODescriptorFactory {
   ClientChannel* CreateClientChannel(
       IOService* io_service,
       const std::string& address,
-      uint32_t timeout_msec);
+      uint32_t timeout_msec,
+      uint32_t heartbeat_msec);
 
   bool Destroy(IODescriptor* descriptor);
 

@@ -21,6 +21,7 @@ int main(int argc, char* argv[]) {
     app
       .SetOnStart([&](){
         app.RegisterService("rapid_echo_handler", [](ProtocolMessage* message){
+          coro::Sleep(1000);
           coro::Send(message);
         });
         return 0;

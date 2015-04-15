@@ -31,8 +31,9 @@ ProtocolMessage* LineProtocol::Decode(
 
   buffer->Consume(end - begin + 1);
   *result = Protocol::kResultDecoded;
-  return MessageFactory::Allocate<LineMessage>(
+  LineMessage* message = MessageFactory::Allocate<LineMessage>(
       std::string(begin, end - begin - 1));
+  return message;
 }
 
 bool LineProtocol::Encode(
@@ -51,6 +52,12 @@ bool LineProtocol::Encode(
   return true;
 }
 
+ProtocolMessage* LineProtocol::HeartBeatRequest() {
+  return NULL;
+}
 
+ProtocolMessage* LineProtocol::HeartBeatResponse(ProtocolMessage* request) {
+  return NULL;
+}
 
 } //namespace minotaur

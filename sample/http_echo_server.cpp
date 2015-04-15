@@ -31,8 +31,7 @@ int main(int argc, char* argv[]) {
           if (response && response->body == request_body) {
             LOG_INFO(logger, "OnResponse:" << *response);
           } else {
-            LOG_ERROR(logger, "fail response body:" << response->body
-              << ", request body:" << request_body);
+            LOG_ERROR(logger, "fail request body:" << request_body);
           }
 
           coro::Send(message);

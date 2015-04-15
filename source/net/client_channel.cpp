@@ -20,10 +20,15 @@ LOGGER_CLASS_IMPL_NAME(logger, ClientChannel, "net.ClientChannel");
 
 ClientChannel::ClientChannel(
     IOService* io_service, 
-    uint32_t timeout_msec)
+    uint32_t timeout_msec,
+    uint32_t heartbeat_msec)
     : Channel(io_service, -1) 
     , status_(kBroken)
+    , timeout_ms_(timeout_msec)
+    , heartbeat_ms_(heartbeat_msec)
     , reconnect_timer_(0)
+    , timeout_timer_(0)
+    , heartbeat_timer_(0)
     , sequence_keeper_(timeout_msec) {
 }
 
@@ -32,6 +37,28 @@ ClientChannel::~ClientChannel() {
 
 int ClientChannel::Start() {
   return TryConnect();
+}
+
+int ClientChannel::StartTimeoutTimer() {
+  if (0 == timeout_ms_) {
+    return 0;
+  }
+
+  timeout_timer_ = IOHandler::GetCurrentIOHandler()->StartTimer(
+      5,
+      std::bind(&ClientChannel::OnTimeout, this));
+  return 0;
+}
+
+int ClientChannel::StartHeartBeatTimer() {
+  if (0 == heartbeat_ms_) {
+    return 0;
+  }
+
+  heartbeat_timer_ = IOHandler::GetCurrentIOHandler()->StartTimer(
+      heartbeat_ms_,
+      std::bind(&ClientChannel::OnHeartBeat, this));
+  return 0;
 }
 
 int ClientChannel::Stop() {
@@ -104,6 +131,16 @@ void ClientChannel::OnConnect() {
     return;
   }
 
+  if (0 != StartTimeoutTimer()) {
+    MI_LOG_ERROR(logger, "ClientChannel::OnConnect StartTimeoutTimer fail");
+    return;
+  }
+
+  if (0 != StartHeartBeatTimer()) {
+    MI_LOG_ERROR(logger, "ClientChannel::OnConnect StartHeartBeatTimer fail");
+    return;
+  }
+
   guard.Dispose();
   SetStatus(kConnected);
 
@@ -144,12 +181,20 @@ void ClientChannel::OnDecodeMessage(ProtocolMessage* message) {
     return;
   }
 
+  if (keeper_message->direction == ProtocolMessage::kHeartBeat
+      && message->direction == ProtocolMessage::kHeartBeat) {
+    MI_LOG_TRACE(logger, "ClientChannel::OnDecodeMessage heartbeat:" << *message);
+    MessageFactory::Destroy(message);
+    MessageFactory::Destroy(keeper_message);
+    return;
+  }
+
   message->status = ProtocolMessage::kStatusOK;
   message->direction = ProtocolMessage::kIncomingResponse;
   message->handler_id = keeper_message->handler_id;
   message->sequence_id = keeper_message->sequence_id;
   message->descriptor_id = GetDescriptorId();
-  message->payload = keeper_message->payload;
+  message->payload.data = keeper_message->payload.data;
 
   MI_LOG_TRACE(logger, "ClientChannel::OnDecodeMessage " << *message);
 
@@ -160,7 +205,50 @@ void ClientChannel::OnDecodeMessage(ProtocolMessage* message) {
     MessageFactory::Destroy(message);
     return;
   }
+}
 
+void ClientChannel::OnTimeout() {
+  AsyncSequenceKeeper::QueueType timeout_queue = sequence_keeper_.Timeout();
+  ProtocolMessage* message = timeout_queue.front();
+  while (message) {
+    timeout_queue.pop_front();
+    if (message->direction == ProtocolMessage::kOutgoingRequest) {
+      message->status = ProtocolMessage::kStatusTimeout;
+      MI_LOG_TRACE(logger, "ClientChannel::OnTimeout message:" << *message);
+      if (!GetIOService()->GetServiceStage()->Send(message)) {
+        MI_LOG_WARN(logger, "ClientChannel::OnTimeout send fail:" << *message);
+        MessageFactory::Destroy(message);
+      }
+    } else if (message->direction == ProtocolMessage::kHeartBeat) {
+      BreakChannel(); 
+    }
+    message = timeout_queue.front(); 
+  }
+
+  StartTimeoutTimer();
+}
+
+void ClientChannel::OnHeartBeat() {
+  ProtocolMessage* heartbeat_message = GetProtocol()->HeartBeatRequest();
+  if (0 != EncodeMessage(heartbeat_message)) {
+    MessageFactory::Destroy(heartbeat_message);
+  }
+
+  OnWrite();
+
+  StartHeartBeatTimer();
+}
+
+void ClientChannel::BreakChannel() {
+  if (GetStatus() != kBroken) {
+    return;
+  }
+
+  SocketOperation::ShutDownBoth(GetFD());
+  SetStatus(kBroken);
+
+  read_buffer_.Reset();
+  write_buffer_.Reset(); 
 }
 
 int ClientChannel::TryConnect() {
@@ -228,6 +316,16 @@ void ClientChannel::CancelTimer() {
   if (reconnect_timer_ != 0) {
     IOHandler::GetCurrentIOHandler()->CancelTimer(reconnect_timer_);
     reconnect_timer_ = 0;
+  }
+
+  if (timeout_timer_ != 0) {
+    IOHandler::GetCurrentIOHandler()->CancelTimer(timeout_timer_);
+    timeout_timer_ = 0;
+  }
+
+  if (heartbeat_timer_ != 0) {
+    IOHandler::GetCurrentIOHandler()->CancelTimer(heartbeat_timer_);
+    heartbeat_timer_ = 0;
   }
 }
 

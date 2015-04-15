@@ -36,6 +36,11 @@ class Protocol {
       IOBuffer* buffer,
       ProtocolMessage* message) = 0;
 
+  virtual ProtocolMessage* HeartBeatRequest() = 0;
+
+  virtual ProtocolMessage* HeartBeatResponse(
+      ProtocolMessage* request) = 0;
+
   virtual Protocol* Clone() = 0;
   virtual void Destroy() = 0;
   

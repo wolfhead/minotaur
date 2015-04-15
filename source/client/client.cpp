@@ -16,10 +16,12 @@ LOGGER_CLASS_IMPL(logger, Client);
 Client::Client(
     IOService* io_service,
     const std::string& address,
-    uint32_t timeout_ms) 
+    uint32_t timeout_ms,
+    uint32_t heartbeat_ms) 
     : io_service_(io_service)
     , address_(address) 
     , timeout_ms_(timeout_ms)
+    , heartbeat_ms_(heartbeat_ms)
     , channel_(NULL) {
 }
 
@@ -29,7 +31,7 @@ Client::~Client() {
 
 int Client::Start() {
   ClientChannel* channel = IODescriptorFactory::Instance()
-    .CreateClientChannel(io_service_, address_, timeout_ms_);
+    .CreateClientChannel(io_service_, address_, timeout_ms_, heartbeat_ms_);
   if (!channel) {
     MI_LOG_ERROR(logger, "Client::Start CreateClientChannel fail"
         << ", address:" << address_);
@@ -61,6 +63,7 @@ void Client::Dump(std::ostream& os) const {
   os << "{\"type\": \"Client\""
      << ", \"address\": \"" << address_ << "\""
      << ", \"timeout\": " << timeout_ms_
+     << ", \"heartbeat\": " << heartbeat_ms_
      << "}" << std::endl;
 }
 
@@ -83,7 +86,12 @@ ProtocolMessage* Client::DoSendRecieve(ProtocolMessage* message, uint32_t timeou
 
   message->descriptor_id = channel_->GetDescriptorId();
   message->direction = ProtocolMessage::kOutgoingRequest;
-  return coro::SendRecieve(message, timeout_ms);
+  ProtocolMessage* response = coro::SendRecieve(message, timeout_ms);
+  if (!response || response->status != ProtocolMessage::kStatusOK) {
+    return NULL;
+  }
+
+  return response;
 }
 
 std::ostream& operator << (std::ostream& os, const Client& client) {

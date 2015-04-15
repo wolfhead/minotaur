@@ -22,7 +22,8 @@ class ClientChannel : public Channel {
 
   ClientChannel(
       IOService* io_service, 
-      uint32_t timeout_msec);
+      uint32_t timeout_msec,
+      uint32_t heartbeat_msec);
 
   ~ClientChannel();
 
@@ -37,6 +38,10 @@ class ClientChannel : public Channel {
  private:
   LOGGER_CLASS_DECL(logger);
 
+  int StartTimeoutTimer();
+
+  int StartHeartBeatTimer();
+
   virtual void OnWrite();
 
   virtual void OnClose();
@@ -45,9 +50,15 @@ class ClientChannel : public Channel {
 
   virtual void OnConnect();
 
+  virtual void OnTimeout();
+
+  virtual void OnHeartBeat();
+
   virtual int EncodeMessage(ProtocolMessage* message);
 
   virtual void OnDecodeMessage(ProtocolMessage* message);
+
+  void BreakChannel();
 
   int TryConnect();
 
@@ -55,7 +66,11 @@ class ClientChannel : public Channel {
 
   struct sockaddr_in sock_addr_;
   int status_;
+  uint32_t timeout_ms_;
+  uint32_t heartbeat_ms_;
   uint64_t reconnect_timer_;
+  uint64_t timeout_timer_;
+  uint64_t heartbeat_timer_;
   AsyncSequenceKeeper sequence_keeper_;
 };
 

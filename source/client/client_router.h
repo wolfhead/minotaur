@@ -18,7 +18,7 @@ class ClientRouter {
   ClientRouter(IOService* io_service);
   ~ClientRouter();
 
-  int AddClient(const std::string& address, uint32_t timeout_ms);
+  int AddClient(const std::string& address, uint32_t timeout_ms, uint32_t heartbeat_ms);
   int Start();
   int Stop();
 

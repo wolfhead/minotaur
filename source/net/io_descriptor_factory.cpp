@@ -89,7 +89,8 @@ Acceptor* IODescriptorFactory::CreateAcceptor(
 ClientChannel* IODescriptorFactory::CreateClientChannel(
     IOService* io_service,
     const std::string& address,
-    uint32_t timeout_msec) {
+    uint32_t timeout_msec,
+    uint32_t heartbeat_msec) {
   std::string ip;
   int port = 0;
   int protocol_type = 0;
@@ -108,7 +109,7 @@ ClientChannel* IODescriptorFactory::CreateClientChannel(
 
   uint64_t descriptor_id = 0;
   ClientChannel* client_channel = freelist_.alloc_with<ClientChannel>(
-      &descriptor_id, io_service, timeout_msec);
+      &descriptor_id, io_service, timeout_msec, heartbeat_msec);
   if (!client_channel) {
     return NULL;
   }

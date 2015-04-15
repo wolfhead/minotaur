@@ -25,6 +25,8 @@ class IOBuffer {
   uint32_t GetReadSize() const {return write_offset_ - read_offset_;}
   void EnsureCStyle() {*(GetRead() + GetReadSize()) = 0;}
 
+  void Reset() {write_offset_ = read_offset_ = 0;}
+
   void Dump(std::ostream& os) const;
 
  private:

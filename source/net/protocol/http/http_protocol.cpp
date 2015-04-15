@@ -169,4 +169,12 @@ bool HttpProtocol::Encode(
   return true;
 }
 
+ProtocolMessage* HttpProtocol::HeartBeatRequest() {
+  return NULL;
+}
+
+ProtocolMessage* HttpProtocol::HeartBeatResponse(ProtocolMessage* request) {
+  return NULL;
+}
+
 } //namespace minotaur

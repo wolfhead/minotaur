@@ -46,6 +46,10 @@ class HttpProtocol : public Protocol {
       IOBuffer* buffer,
       ProtocolMessage* message);
 
+  virtual ProtocolMessage* HeartBeatRequest();
+
+  virtual ProtocolMessage* HeartBeatResponse(ProtocolMessage* request);
+
   virtual Protocol* Clone() {return new HttpProtocol();}
   virtual void Destroy() {delete this;}
 

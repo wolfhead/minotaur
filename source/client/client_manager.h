@@ -19,7 +19,11 @@ class ClientManager {
   int Start();
   int Stop();
 
-  int AddClient(const std::string& name, const std::string& address, uint32_t timeout_ms);
+  int AddClient(
+      const std::string& name, 
+      const std::string& address, 
+      uint32_t timeout_ms,
+      uint32_t heartbeat_ms);
 
   ClientRouter* GetClientRouter(const std::string& name);
 

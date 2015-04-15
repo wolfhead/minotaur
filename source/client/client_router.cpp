@@ -19,8 +19,8 @@ ClientRouter::~ClientRouter() {
   }
 }
 
-int ClientRouter::AddClient(const std::string& address, uint32_t timeout_ms) {
-  clients_.push_back(new Client(GetIOService(), address, timeout_ms));
+int ClientRouter::AddClient(const std::string& address, uint32_t timeout_ms, uint32_t heartbeat_ms) {
+  clients_.push_back(new Client(GetIOService(), address, timeout_ms, heartbeat_ms));
   return 0;
 }
 
