@@ -7,6 +7,7 @@
 #include "../io_service.h"
 #include "../stage.h"
 #include "../service/service_handler.h"
+#include "../common/time_util.h"
 #include "protocol/protocol.h"
 
 namespace minotaur {
@@ -27,7 +28,7 @@ void ServiceChannel::OnDecodeMessage(ProtocolMessage* message) {
     return;
   }
 
-
+  message->time.birthtime = Time::GetMillisecond();
   message->status = ProtocolMessage::kStatusOK;
   message->direction = ProtocolMessage::kIncomingRequest;
   message->handler_id = Handler::kUnspecifiedId;

@@ -16,7 +16,6 @@ LineProtocol::LineProtocol()
 }
 
 ProtocolMessage* LineProtocol::Decode(
-      IODescriptor* descriptor, 
       IOBuffer* buffer, 
       int* result) {
 
@@ -25,19 +24,18 @@ ProtocolMessage* LineProtocol::Decode(
   char* end = strchr(begin, '\n');
 
   if (!end) {
-    *result = Protocol::kResultContinue;
+    *result = Protocol::kDecodeContinue;
     return NULL;
   }
 
   buffer->Consume(end - begin + 1);
-  *result = Protocol::kResultDecoded;
+  *result = Protocol::kDecodeSuccess;
   LineMessage* message = MessageFactory::Allocate<LineMessage>(
       std::string(begin, end - begin - 1));
   return message;
 }
 
-bool LineProtocol::Encode(
-      IODescriptor* descriptor,
+int LineProtocol::Encode(
       IOBuffer* buffer,
       ProtocolMessage* message) {
   LineMessage* line_message = static_cast<LineMessage*>(message);
@@ -49,7 +47,7 @@ bool LineProtocol::Encode(
   *(begin + body.size()) = '\n';
 
   buffer->Produce(body.size() + 1);
-  return true;
+  return Protocol::kEncodeSuccess;
 }
 
 ProtocolMessage* LineProtocol::HeartBeatRequest() {

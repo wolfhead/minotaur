@@ -35,9 +35,13 @@ class Fifo {
     return true;
   }
 
-  bool Pop(T* data, uint32_t milliseconds = 0) {
+  bool Pop(T* data, int32_t milliseconds = 0) {
     std::unique_lock<std::mutex> lock(read_lock_);
     if (Empty()) {
+      if (milliseconds == -1) {
+        return false;
+      }
+
       if (milliseconds) {
         read_cond_.wait_for(lock, std::chrono::milliseconds(milliseconds));
       } else {

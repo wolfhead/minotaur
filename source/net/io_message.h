@@ -45,10 +45,14 @@ class ProtocolMessage : public MessageBase {
     uint64_t coroutine_id;
     Service* service;
   } payload;
+  union {
+    uint64_t data;
+    uint64_t birthtime;
+    uint64_t timeout;
+  } time;
   // for book-keeper
   ProtocolMessage* next_;
   ProtocolMessage* prev_;
-  uint64_t timestamp_;
 };
 
 class LineMessage : public ProtocolMessage {

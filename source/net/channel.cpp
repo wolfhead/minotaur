@@ -58,9 +58,12 @@ int Channel::Stop() {
 }
 
 void Channel::OnRead() {
+  const static uint32_t per_read_size = 4096;
+  const static uint32_t decode_watermark = 4096;
+
   int ret = 0;
   while (true) {
-    ret = SocketOperation::Receive(GetFD(), read_buffer_.EnsureWrite(4096), 4096);
+    ret = SocketOperation::Receive(GetFD(), read_buffer_.EnsureWrite(per_read_size), per_read_size);
     if (ret <= 0) {
       if (ret == 0) {
         LOG_DEBUG(logger, "Channel::ReadBuffer channel closed by peer" 
@@ -77,11 +80,18 @@ void Channel::OnRead() {
       }
       break;
     }
+
     read_buffer_.Produce(ret);
+    if (read_buffer_.GetReadSize() >= decode_watermark) {
+      if (0 != DecodeMessage()) {
+        SocketOperation::ShutDownRead(GetFD());
+        break;
+      }
+    }
   }
 
   if (0 != DecodeMessage()) {
-    SocketOperation::ShutDownBoth(GetFD());
+    SocketOperation::ShutDownRead(GetFD());
   }
 }
 
@@ -115,9 +125,9 @@ void Channel::OnClose() {
 }
 
 int Channel::DecodeMessage() {
-  int result = Protocol::kResultDecoded;
-  while (result == Protocol::kResultDecoded) {
-    ProtocolMessage* message = GetProtocol()->Decode(this, &read_buffer_, &result);
+  int result = Protocol::kDecodeSuccess;
+  while (result == Protocol::kDecodeSuccess) {
+    ProtocolMessage* message = GetProtocol()->Decode(&read_buffer_, &result);
     if (!message) {
       continue;
     }
@@ -125,7 +135,7 @@ int Channel::DecodeMessage() {
     OnDecodeMessage(message);
   }
 
-  if (result == Protocol::kResultFail) {
+  if (result == Protocol::kDecodeFail) {
     return -1;
   }
 
@@ -133,7 +143,7 @@ int Channel::DecodeMessage() {
 }
 
 int Channel::EncodeMessage(ProtocolMessage* message) {
-  if (!GetProtocol()->Encode(this, &write_buffer_, message)) {
+  if (Protocol::kEncodeSuccess != GetProtocol()->Encode(&write_buffer_, message)) {
     MI_LOG_ERROR(logger, "Channel::EncodeMessage fail");
     return -1;
   }

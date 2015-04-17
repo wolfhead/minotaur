@@ -118,11 +118,11 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   BOOST_CHECK_EQUAL(0, ret);
 
   ClientChannel* rapid_connector = IODescriptorFactory::Instance()
-    .CreateClientChannel(&io_service, "rapid://localhost:6604", 2000);
+    .CreateClientChannel(&io_service, "rapid://localhost:6604", 2000, 0);
   ret = rapid_connector->Start();
 
   ClientChannel* line_connector = IODescriptorFactory::Instance()
-    .CreateClientChannel(&io_service, "line://localhost:6601", 2000);
+    .CreateClientChannel(&io_service, "line://localhost:6601", 2000, 0);
   ret = line_connector->Start();
 
   BOOST_CHECK_EQUAL(0, ret);
@@ -145,13 +145,12 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
   ret = io_service.Run();
   BOOST_CHECK_EQUAL(0, ret);
   
-  
+
   IODescriptorFactory::Instance().Destroy(http_acceptor);
   IODescriptorFactory::Instance().Destroy(line_acceptor);
   IODescriptorFactory::Instance().Destroy(rapid_acceptor);
   IODescriptorFactory::Instance().Destroy(line_connector);
   IODescriptorFactory::Instance().Destroy(rapid_connector);
-  
 }
 
 BOOST_AUTO_TEST_SUITE_END()

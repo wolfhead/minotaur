@@ -9,15 +9,19 @@
 namespace minotaur {
 
 class ProtocolMessage;
-class IODescriptor;
 class IOBuffer;
 
 class Protocol {
  public:
   enum {
-    kResultContinue = 0,
-    kResultDecoded = 1,
-    kResultFail = 2,
+    kDecodeSuccess = 0,
+    kDecodeContinue = 1,
+    kDecodeFail = 2,
+  };
+
+  enum {
+    kEncodeSuccess = 0,
+    kEncodeFail = 1,
   };
 
   Protocol(int protocol_type, bool is_sync) 
@@ -27,12 +31,10 @@ class Protocol {
   virtual ~Protocol() {};
 
   virtual ProtocolMessage* Decode(
-      IODescriptor* descriptor, 
       IOBuffer* buffer, 
       int* result) = 0;
 
-  virtual bool Encode(
-      IODescriptor* descriptor,
+  virtual int Encode(
       IOBuffer* buffer,
       ProtocolMessage* message) = 0;
 

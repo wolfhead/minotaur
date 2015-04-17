@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(TestThreadingLockFree) {
   static const int ring_size = 1024*32;
   static const int push_count = 10000000;
   static const int producer_count = 4;
-  static const int consumer_count = 1;
+  static const int consumer_count = 2;
 
   Sequencer ring(ring_size);
 

@@ -15,9 +15,13 @@ template<typename Handler>
 struct StageData {
   typedef typename Handler::MessageType MessageType;
 
+#ifndef MINOTAUR_LOCKFREE_QUEUE
+  typedef queue::Fifo<MessageType> MessageQueueType;
+#else
   typedef typename queue::MPSCQueue<
     MessageType, 
     queue::ConditionVariableStrategy<0, 16> > MessageQueueType;
+#endif //MINOTAUR_LOCKFREE_QUEUE
 
   typedef typename queue::MPSCQueue<
     MessageType,

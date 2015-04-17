@@ -18,9 +18,9 @@ void ProtocolMessage::Dump(std::ostream& os) const {
      << ", \"handler_id\": " << handler_id
      << ", \"sequence_id\": " << sequence_id
      << ", \"payload\": " << payload.data
+     << ", \"time\": " << time.data
      << ", \"next_\": " << next_
      << ", \"prev_\": " << prev_
-     << ", \"timestamp_\": " << timestamp_
      << "}";
 }
 

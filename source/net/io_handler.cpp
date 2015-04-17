@@ -42,7 +42,7 @@ void IOHandler::Run(StageData<IOHandler>* data) {
   EventMessage message;
   while (data->running) {
     ProcessTimer();
-    if (!data->queue->Pop(&message, 2)) {
+    if (!data->queue->Pop(&message, 1)) {
       continue;
     }
     Handle(message);    

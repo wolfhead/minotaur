@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
       .SetOnStart([&](){
         ClientRouter* rapid_client = app.GetClientManager()->GetClientRouter("rapid");
 
-        return app.RegisterService("http_echo_handler", [=](ProtocolMessage* message){
+        app.RegisterService("http_invode_handler", [=](ProtocolMessage* message){
           RapidMessage* rapid_message = MessageFactory::Allocate<RapidMessage>();
           std::string request_body = rapid_message->body = 
               boost::lexical_cast<std::string>(time(NULL));
@@ -36,6 +36,12 @@ int main(int argc, char* argv[]) {
 
           coro::Send(message);
         });
+
+        app.RegisterService("http_echo_handler", [](ProtocolMessage* message)  {
+          coro::Send(message);
+        });
+
+        return 0;
       })
       .Run(argc, argv);
 }

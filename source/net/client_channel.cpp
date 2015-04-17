@@ -158,7 +158,7 @@ int ClientChannel::EncodeMessage(ProtocolMessage* message) {
 
   message->sequence_id = sequence_keeper_.GenerateSequenceId();
 
-  if (!GetProtocol()->Encode(this, &write_buffer_, message)) {
+  if (Protocol::kEncodeSuccess != GetProtocol()->Encode(&write_buffer_, message)) {
     MI_LOG_ERROR(logger, "ClientChannel::EncodeMessage fail");
     return -1;
   }

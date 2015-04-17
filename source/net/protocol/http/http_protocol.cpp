@@ -110,13 +110,12 @@ HttpProtocol::HttpProtocol()
 }
 
 ProtocolMessage* HttpProtocol::Decode(
-    IODescriptor* descriptor, 
     IOBuffer* buffer, 
     int* result) {
   if (parser_.messages.size()) {
     ProtocolMessage* message = parser_.messages.front();
     parser_.messages.pop_front();
-    *result = Protocol::kResultDecoded;
+    *result = Protocol::kDecodeSuccess;
     return message;
   } 
 
@@ -128,12 +127,12 @@ ProtocolMessage* HttpProtocol::Decode(
 
   if (parser_.parser.upgrade) {
     MI_LOG_ERROR(logger, "HttpProtocol::Decode http upgrade not supported");
-    *result = Protocol::kResultFail;
+    *result = Protocol::kDecodeFail;
     return NULL;
   } else if (parsed != buffer->GetReadSize()) {
     MI_LOG_ERROR(logger, "HttpProtocol::Decode fail:" 
         << ", fail: "<< http_errno_description((http_errno)parser_.parser.http_errno));
-    *result = Protocol::kResultFail;
+    *result = Protocol::kDecodeFail;
     return NULL;
   }
 
@@ -142,16 +141,15 @@ ProtocolMessage* HttpProtocol::Decode(
   if (parser_.messages.size()) {
     ProtocolMessage* message = parser_.messages.front();
     parser_.messages.pop_front();
-    *result = Protocol::kResultDecoded;
+    *result = Protocol::kDecodeContinue;
     return message;
   } 
 
-  *result = Protocol::kResultContinue;
+  *result = Protocol::kDecodeContinue;
   return NULL;
 }
 
-bool HttpProtocol::Encode(
-    IODescriptor* descriptor,
+int HttpProtocol::Encode(
     IOBuffer* buffer,
     ProtocolMessage* message) {
   static const std::string response = 
@@ -166,7 +164,7 @@ bool HttpProtocol::Encode(
 
   buffer->EnsureWrite(response.size());
   buffer->Write(response.data(), response.size());
-  return true;
+  return Protocol::kEncodeSuccess;
 }
 
 ProtocolMessage* HttpProtocol::HeartBeatRequest() {

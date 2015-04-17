@@ -37,12 +37,10 @@ class HttpProtocol : public Protocol {
   HttpProtocol();
   
   virtual ProtocolMessage* Decode(
-      IODescriptor* descriptor, 
       IOBuffer* buffer, 
       int* result);
 
-  virtual bool Encode(
-      IODescriptor* descriptor,
+  virtual int Encode(
       IOBuffer* buffer,
       ProtocolMessage* message);
 

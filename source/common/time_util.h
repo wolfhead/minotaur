@@ -19,23 +19,23 @@ class Time {
   typedef uint64_t Microsecond;
   typedef time_t TimeVal;
 
-  static Microsecond GetMillisecond() {
+  inline static Microsecond GetMillisecond() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return  (tv.tv_usec/1000 + tv.tv_sec*1000);
   }
 
-  static Microsecond GetMicrosecond() {
+  inline static Microsecond GetMicrosecond() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return (tv.tv_usec + tv.tv_sec * 1000000);
   }
 
-  static TimeVal Now() {
+  inline static TimeVal Now() {
     return time(NULL);
   }
 
-  static TimeVal GetGreenwishSecondOffset() {
+  inline static TimeVal GetGreenwishSecondOffset() {
     struct timeval tv;
     struct timezone tz;
     gettimeofday(&tv, &tz);

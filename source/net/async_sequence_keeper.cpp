@@ -19,6 +19,8 @@ AsyncSequenceKeeper::~AsyncSequenceKeeper() {
 }
 
 int AsyncSequenceKeeper::Register(ProtocolMessage* message) {
+  message->time.timeout = GetTimestamp(timeout_sec_, timeout_usec_);
+
   if (!registery_.insert(std::make_pair(message->sequence_id, message)).second) {
     MI_LOG_WARN(logger, "AsyncSequenceKeeper::Register duplicate sequence_id:"
         << message->sequence_id);
@@ -44,7 +46,7 @@ AsyncSequenceKeeper::QueueType AsyncSequenceKeeper::Timeout() {
   uint64_t current_timestamp = GetTimestamp(0, 0);
   QueueType result;
   ProtocolMessage* message = queue_.front();
-  while (message && message->timestamp_ < current_timestamp) {
+  while (message && message->time.timeout < current_timestamp) {
     result.push_back(message);
     queue_.pop_front();
     registery_.erase(message->sequence_id);

@@ -26,17 +26,16 @@ RapidProtocol::RapidProtocol()
 }
 
 ProtocolMessage* RapidProtocol::Decode(
-      IODescriptor* descriptor, 
       IOBuffer* buffer, 
       int* result) {
   if (buffer->GetReadSize() < sizeof(RapidHeader)) {
-    *result = Protocol::kResultContinue;
+    *result = Protocol::kDecodeContinue;
     return NULL;
   }
 
   RapidHeader* header = (RapidHeader*)buffer->GetRead();
   if (buffer->GetReadSize() < header->size) {
-    *result = Protocol::kResultContinue;
+    *result = Protocol::kDecodeContinue;
     return NULL;
   }
 
@@ -54,12 +53,11 @@ ProtocolMessage* RapidProtocol::Decode(
       header->size - sizeof(RapidHeader));
   
   buffer->Consume(header->size);
-  *result = Protocol::kResultDecoded;
+  *result = Protocol::kDecodeSuccess;
   return message;
 }
 
-bool RapidProtocol::Encode(
-      IODescriptor* descriptor,
+int RapidProtocol::Encode(
       IOBuffer* buffer,
       ProtocolMessage* message) {
   RapidMessage* rapid_message = 
@@ -84,7 +82,7 @@ bool RapidProtocol::Encode(
 
   buffer->Write((const char*)&header, sizeof(RapidHeader));
   buffer->Write(rapid_message->body.data(), rapid_message->body.size());
-  return true;
+  return Protocol::kEncodeSuccess;
 }
 
 ProtocolMessage* RapidProtocol::HeartBeatRequest() {

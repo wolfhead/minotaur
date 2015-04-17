@@ -70,8 +70,9 @@ class IODescriptor : public boost::noncopyable {
   // OnActiveClose is called when application actively
   // try to close a discriptor
   virtual void OnActiveClose();
-  // ##################################################
 
+  // ##################################################
+  // Register event
   int RegisterRead();
 
   int RegisterWrite(); 
