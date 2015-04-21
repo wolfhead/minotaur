@@ -14,7 +14,7 @@
 
   <clients>
     <router name="rapid">
-      <client address="rapid://0.0.0.0:6601" timeout="50" count="1" heartbeat="1000"/>
+      <client address="http://0.0.0.0:6600" timeout="50" count="1" heartbeat="1000"/>
     </router>
   </clients>
 

@@ -68,6 +68,9 @@ add_executable(t_linked_list
 add_executable(t_io_descriptor_factory
   t_io_descriptor_factory.cpp)
 
+add_executable(t_http_protocol
+  t_http_protocol.cpp)
+
 #add_executable(t_lf_static_list_pool
 #  t_lf_static_list_pool.cpp)
 

@@ -3,8 +3,6 @@
  * @author Wolfhead
  */
 #include "io_buffer.h"
-#include <stdlib.h>
-#include <string.h>
 
 namespace minotaur {
 
@@ -24,11 +22,6 @@ IOBuffer::~IOBuffer() {
     free(buffer_);
     buffer_ = NULL;
   }
-}
-
-void IOBuffer::Write(const char* buffer, uint32_t size) {
-  memcpy(EnsureWrite(size), buffer, size);
-  Produce(size);
 }
 
 char* IOBuffer::EnsureWrite(uint32_t size) {

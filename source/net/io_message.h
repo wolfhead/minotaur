@@ -15,11 +15,11 @@ class Service;
 class ProtocolMessage : public MessageBase {
  public:
   enum {
-    kIncomingRequest = 0,
+    kDirectionUnknown = 0,
+    kIncomingRequest,
     kOutgoingRequest,
     kIncomingResponse,
     kOutgoingResponse,
-    kHeartBeat,
   };
 
   enum {
@@ -88,20 +88,13 @@ class RapidMessage : public ProtocolMessage {
 
 class HttpMessage : public ProtocolMessage {
  public:
-  enum {
-    kMethodDelete = 0,
-    kMethodGet = 1,
-    kMethodHead = 2,
-    kMethodPost = 3,
-    kMethodPut = 4,
-    kHttpTypeRequest = 0,
-    kHttpTypeResponse = 1,
-    kHttpTypeBoth = 2,
-  };
-
   HttpMessage() {
     type_id = MessageType::kHttpMessage;
   }
+
+  const std::string& GetMethodString() const;
+
+  const std::string& GetStatusString() const;
 
   virtual void Dump(std::ostream& os) const;
 
@@ -109,7 +102,6 @@ class HttpMessage : public ProtocolMessage {
   unsigned short http_minor;
   unsigned short status_code;
   unsigned short method;
-  unsigned short http_type;
   bool keep_alive; 
 
   std::string url;

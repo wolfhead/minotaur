@@ -15,7 +15,7 @@ class HttpMessage;
 
 struct HttpProtocolData {
   HttpProtocolData() {
-    http_parser_init((http_parser*)this, HTTP_REQUEST);
+    http_parser_init((http_parser*)this, HTTP_BOTH);
     current = NULL;
     on_header_value = false;
   }
@@ -34,6 +34,15 @@ struct HttpProtocolData {
 
 class HttpProtocol : public Protocol {
  public:
+  enum {
+#define XX(num, name, string) kMethod##name = num,
+    HTTP_METHOD_MAP(XX)
+#undef XX
+  }; 
+
+  static const std::string& GetMethodString(int method);
+  static const std::string& GetStatusString(int status);
+
   HttpProtocol();
   
   virtual ProtocolMessage* Decode(
@@ -53,6 +62,11 @@ class HttpProtocol : public Protocol {
 
  private:
   LOGGER_CLASS_DECL(logger);
+
+  int EncodeRequest(IOBuffer* buffer, ProtocolMessage* message);
+
+  int EncodeResponse(IOBuffer* buffer, ProtocolMessage* message);
+
   HttpProtocolData parser_;;
 };
 

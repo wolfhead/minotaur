@@ -4,6 +4,9 @@
  */
 #include "io_message.h"
 #include <sstream>
+#include "protocol/http/http_protocol.h"
+#include "../common/macro.h"
+#include "../3rd-party/http_parser/http_parser.h"
 
 namespace minotaur {
 
@@ -54,11 +57,10 @@ void HttpMessage::Dump(std::ostream& os) const {
   os << "{\"type\": \"HttpMessage\""
      << ", \"ProtocolMessage\": ";
   ProtocolMessage::Dump(os);      
-  os << ", \"http_major\": " << http_major
-     << ", \"http_minor\": " << http_minor
-     << ", \"status_code\": " << status_code
-     << ", \"method\": " << method
-     << ", \"http_type\": " << http_type
+  os << ", \"http_major\": " << (int)http_major
+     << ", \"http_minor\": " << (int)http_minor
+     << ", \"status_code\": " << (int)status_code
+     << ", \"method\": " << (int)method
      << ", \"keep_alive\": " << keep_alive
      << ", \"url\": \"" << url << "\""
      << ", \"body\": \"" << body << "\"";
@@ -68,6 +70,14 @@ void HttpMessage::Dump(std::ostream& os) const {
   }
 
   os << "}";
+}
+
+const std::string& HttpMessage::GetMethodString() const {
+  return HttpProtocol::GetMethodString(method);
+}
+
+const std::string& HttpMessage::GetStatusString() const {
+  return HttpProtocol::GetStatusString(status_code);
 }
 
 std::ostream& operator << (std::ostream& os, const ProtocolMessage& message) {

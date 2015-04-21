@@ -181,8 +181,8 @@ void ClientChannel::OnDecodeMessage(ProtocolMessage* message) {
     return;
   }
 
-  if (keeper_message->direction == ProtocolMessage::kHeartBeat
-      && message->direction == ProtocolMessage::kHeartBeat) {
+  if (keeper_message->type_id == MessageType::kHeartBeatMessage
+      && message->type_id == MessageType::kHeartBeatMessage) {
     MI_LOG_TRACE(logger, "ClientChannel::OnDecodeMessage heartbeat:" << *message);
     MessageFactory::Destroy(message);
     MessageFactory::Destroy(keeper_message);
@@ -212,15 +212,16 @@ void ClientChannel::OnTimeout() {
   ProtocolMessage* message = timeout_queue.front();
   while (message) {
     timeout_queue.pop_front();
-    if (message->direction == ProtocolMessage::kOutgoingRequest) {
+    if (message->type_id == MessageType::kHeartBeatMessage) {
+      MessageFactory::Destroy(message);
+      BreakChannel();
+    } else {
       message->status = ProtocolMessage::kStatusTimeout;
       MI_LOG_TRACE(logger, "ClientChannel::OnTimeout message:" << *message);
       if (!GetIOService()->GetServiceStage()->Send(message)) {
         MI_LOG_WARN(logger, "ClientChannel::OnTimeout send fail:" << *message);
         MessageFactory::Destroy(message);
-      }
-    } else if (message->direction == ProtocolMessage::kHeartBeat) {
-      BreakChannel(); 
+      }   
     }
     message = timeout_queue.front(); 
   }

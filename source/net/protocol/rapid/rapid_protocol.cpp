@@ -42,7 +42,7 @@ ProtocolMessage* RapidProtocol::Decode(
   RapidMessage* message = MessageFactory::Allocate<RapidMessage>();
 
   if (header->type == RapidMessage::kHeartBeatType) {
-    message->direction = ProtocolMessage::kHeartBeat;
+    message->type_id = MessageType::kHeartBeatMessage;
   }
 
   message->sequence_id = header->seqid;
@@ -67,7 +67,7 @@ int RapidProtocol::Encode(
       sizeof(RapidHeader) + rapid_message->body.size();
 
   uint8_t message_type = RapidMessage::kDataType;
-  if (message->direction == ProtocolMessage::kHeartBeat) {
+  if (message->type_id == MessageType::kHeartBeatMessage) {
     message_type = RapidMessage::kHeartBeatType;
   }
 
@@ -87,7 +87,7 @@ int RapidProtocol::Encode(
 
 ProtocolMessage* RapidProtocol::HeartBeatRequest() {
   RapidMessage* rapid_message = MessageFactory::Allocate<RapidMessage>();
-  rapid_message->direction = ProtocolMessage::kHeartBeat;
+  rapid_message->type_id = MessageType::kHeartBeatMessage;
   return rapid_message;
 }
 

@@ -20,7 +20,7 @@ ServiceChannel::ServiceChannel(IOService* io_service, int fd, Service* service)
 }
 
 void ServiceChannel::OnDecodeMessage(ProtocolMessage* message) {
-  if (message->direction == ProtocolMessage::kHeartBeat) {
+  if (message->type_id == MessageType::kHeartBeatMessage) {
     ProtocolMessage* heartbeat_response = GetProtocol()->HeartBeatResponse(message);
     if (0 != EncodeMessage(heartbeat_response)) {
       MessageFactory::Destroy(heartbeat_response);

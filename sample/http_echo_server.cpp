@@ -38,6 +38,7 @@ int main(int argc, char* argv[]) {
         });
 
         app.RegisterService("http_echo_handler", [](ProtocolMessage* message)  {
+          message->direction = ProtocolMessage::kOutgoingResponse;
           coro::Send(message);
         });
 
