@@ -1,0 +1,18 @@
+<config>
+  <io_service
+    fd_count="65535"
+    event_loop_worker="1"
+    io_queue_size="131072"
+    io_worker="1"
+    service_queue_size="131072"
+    service_worker="1"
+    service_timer_worker="0"
+    service_timer_queue_size="0"
+    stack_size="16384" />
+
+  <services>
+    <service address="rapid://0.0.0.0:6601" name="echo_handler"/>
+    <service address="line://0.0.0.0:6602" name="echo_handler"/>
+    <service address="http://0.0.0.0:6603" name="echo_handler"/>
+  </services>
+</config>

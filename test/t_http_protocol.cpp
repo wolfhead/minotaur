@@ -7,10 +7,10 @@
 #include <common/logger.h>
 #include "unittest_logger.h"
 
-using namespace minotaur;
-using namespace minotaur::unittest;
+using namespace ade;
+using namespace ade::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config;
+static ade::unittest::UnittestLogger logger_config;
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestHttpProtocol);
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(testDecodeRequest) {
       .append("body");
 
   buffer.WriteString(data); 
-  message = (HttpMessage*)http_protocol.Decode(&buffer, &result);
+  message = (HttpMessage*)http_protocol.Decode(&buffer, &result, NULL);
 
   BOOST_CHECK_EQUAL(result, Protocol::kDecodeSuccess);
   BOOST_CHECK(message != NULL);
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(testDecodeRequestiContinue) {
       .append("User-Agent: test\r\n");
 
   buffer.WriteString(data); 
-  message = (HttpMessage*)http_protocol.Decode(&buffer, &result);
+  message = (HttpMessage*)http_protocol.Decode(&buffer, &result, NULL);
 
   BOOST_CHECK(message == NULL);
   BOOST_CHECK_EQUAL(result, Protocol::kDecodeContinue);
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(testDecodeRequestiContinue) {
       .append("body");
 
   buffer.WriteString(data); 
-  message = (HttpMessage*)http_protocol.Decode(&buffer, &result);
+  message = (HttpMessage*)http_protocol.Decode(&buffer, &result, NULL);
 
   BOOST_CHECK_EQUAL(result, Protocol::kDecodeSuccess);
   BOOST_CHECK(message != NULL);
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(testDecodeRequestHeartbeat) {
       .append("\r\n");
 
   buffer.WriteString(data); 
-  message = (HttpMessage*)http_protocol.Decode(&buffer, &result);
+  message = (HttpMessage*)http_protocol.Decode(&buffer, &result, NULL);
 
   BOOST_CHECK_EQUAL(result, Protocol::kDecodeSuccess);
   BOOST_CHECK(message != NULL);
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(testDecodeResponse) {
       .append("body");
 
   buffer.WriteString(data); 
-  message = (HttpMessage*)http_protocol.Decode(&buffer, &result);
+  message = (HttpMessage*)http_protocol.Decode(&buffer, &result, NULL);
 
   BOOST_CHECK_EQUAL(result, Protocol::kDecodeSuccess);
   BOOST_CHECK(message != NULL);
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(testEncodeRequest) {
   BOOST_CHECK_EQUAL(result, Protocol::kEncodeSuccess);
 
   HttpMessage* result_message = NULL;
-  result_message = (HttpMessage*)protocol.Decode(&buffer, &result);
+  result_message = (HttpMessage*)protocol.Decode(&buffer, &result, NULL);
   BOOST_CHECK_EQUAL(result, Protocol::kDecodeSuccess);
   BOOST_CHECK(result_message != NULL);
   BOOST_CHECK_EQUAL(result_message->sequence_id, 1234);
@@ -198,5 +198,82 @@ BOOST_AUTO_TEST_CASE(testEncodeRequest) {
   BOOST_CHECK_EQUAL(result_message->http_minor, 1);
 }
 
+BOOST_AUTO_TEST_CASE(testParseQuery_1) {
+  std::string query = "1=2&3=4";
+  std::map<Slice, Slice> param;
+  int ret = HttpProtocol::ParseParam(Slice(query), &param);
+
+  BOOST_CHECK_EQUAL(ret, 0);
+  BOOST_CHECK_EQUAL(param["1"], "2");
+  BOOST_CHECK_EQUAL(param["3"], "4");
+}
+
+BOOST_AUTO_TEST_CASE(testParseQuery_2) {
+  std::string query = "1=2&3=";
+  std::map<Slice, Slice> param;
+  int ret = HttpProtocol::ParseParam(Slice(query), &param);
+
+  BOOST_CHECK_EQUAL(ret, 0);
+  BOOST_CHECK_EQUAL(param["1"], "2");
+  BOOST_CHECK_EQUAL(param["3"], "");
+}
+
+BOOST_AUTO_TEST_CASE(testParseQuery_3) {
+  std::string query = "";
+  std::map<Slice, Slice> param;
+  int ret = HttpProtocol::ParseParam(Slice(query), &param);
+
+  BOOST_CHECK_EQUAL(ret, 0);
+}
+
+BOOST_AUTO_TEST_CASE(testParseQuery_4) {
+  std::string query = "1";
+  std::map<Slice, Slice> param;
+  int ret = HttpProtocol::ParseParam(Slice(query), &param);
+
+  BOOST_CHECK_EQUAL(ret, -1);
+}
+
+BOOST_AUTO_TEST_CASE(testParseUrl_1) {
+  std::string url = "http://www.baidu.com/test1/test2?key1=value1&key2=value2";
+  SliceHttpUrlEntity entity;
+  int ret = HttpProtocol::ParseUrl(Slice(url), &entity);
+
+  LOG_TRACE(logger, "testParseUrl_1:" << entity);
+
+  BOOST_CHECK_EQUAL(ret, 0);
+  BOOST_CHECK_EQUAL(entity.schema.str(), "http");
+  BOOST_CHECK_EQUAL(entity.host.str(), "www.baidu.com");
+  BOOST_CHECK_EQUAL(entity.port.str(), "");
+  BOOST_CHECK_EQUAL(entity.path.str(), "/test1/test2");
+  BOOST_CHECK_EQUAL(entity.query.str(), "key1=value1&key2=value2");
+}
+
+BOOST_AUTO_TEST_CASE(testParseUrl_2) {
+  std::string url = "/test1/?key1=value1&key2=%3D";
+  SliceHttpUrlEntity entity;
+  int ret = HttpProtocol::ParseUrl(Slice(url), &entity);
+
+  LOG_TRACE(logger, "testParseUrl_2:" << entity);
+  HttpUrlEntity url_entity;
+  url_entity.BuildFromSlice(entity);
+
+  LOG_TRACE(logger, "testParseUrl_2:" << url_entity);
+
+  BOOST_CHECK_EQUAL(ret, 0);
+}
+
+BOOST_AUTO_TEST_CASE(testParseCookie_1) {
+  std::string cookies = " pvid=fae6e87e932c29a0c177512151114f22; slotid=; vendorid=7; adid=20048; groupid=22";
+  std::map<Slice, Slice> cookie;
+
+  int ret = HttpProtocol::ParseCookie(Slice(cookies), &cookie);
+
+  BOOST_CHECK_EQUAL(cookie["pvid"], "fae6e87e932c29a0c177512151114f22");
+  BOOST_CHECK_EQUAL(cookie["slotid"], "");
+  BOOST_CHECK_EQUAL(cookie["vendorid"], "7");
+  BOOST_CHECK_EQUAL(cookie["adid"], "20048");
+  BOOST_CHECK_EQUAL(cookie["groupid"], "22");
+}
 
 BOOST_AUTO_TEST_SUITE_END();

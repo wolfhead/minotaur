@@ -3,7 +3,7 @@
 #include <boost/test/unit_test.hpp>
 #include <lockfree/tagged_ptr.hpp>
 
-using namespace minotaur::lockfree;
+using namespace ade::lockfree;
 
 BOOST_AUTO_TEST_SUITE(TestTaggedPtr);
 

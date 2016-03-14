@@ -12,18 +12,42 @@
 
 BOOST_AUTO_TEST_SUITE(TestSequencer);
 
-static minotaur::unittest::UnittestLogger logger_config;
+static ade::unittest::UnittestLogger logger_config;
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
-using namespace minotaur;
-using namespace minotaur::queue;
+using namespace ade;
+using namespace ade::queue;
 
 #define CHECK_RESULT 1
-//typedef minotaur::queue::MPMCQueue<int64_t, ConditionVariableStrategy<0, 16> > Sequencer;
+//typedef ade::queue::MPMCQueue<int64_t, ConditionVariableStrategy<0, 16> > Sequencer;
 typedef Fifo<int64_t> Sequencer;
 
+BOOST_AUTO_TEST_CASE(TestRingBufferSize) {
+  typedef ade::queue::RingBuffer<int> Ring;
+
+  uint64_t start = 0;
+  uint64_t end = 0;
+
+  BOOST_CHECK_EQUAL(Ring::GetDistance(1024, start, end), 0);
+
+  start = 0;
+  end = 16;
+
+  BOOST_CHECK_EQUAL(Ring::GetDistance(1024, start, end), 16);
+
+  start = 17;
+  end = 16;
+
+  BOOST_CHECK_EQUAL(Ring::GetDistance(1024, start, end), 1023);
+
+  start = 0 - 1;
+  end = 0;
+
+  BOOST_CHECK_EQUAL(Ring::GetDistance(1024, start, end), 1);
+}
+
 BOOST_AUTO_TEST_CASE(TestRingBufferGetIndex) {
-  minotaur::queue::RingBuffer<int> ring(1024);
+  ade::queue::RingBuffer<int> ring(1024);
 
   uint32_t result;
   result = ring.Index(0);

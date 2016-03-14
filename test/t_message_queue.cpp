@@ -6,10 +6,10 @@
 #include <common/time_util.h>
 #include "unittest_logger.h"
 
-using namespace minotaur;
-using namespace minotaur::unittest;
+using namespace ade;
+using namespace ade::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config;
+static ade::unittest::UnittestLogger logger_config;
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestMessageQueue);

@@ -7,7 +7,7 @@
 #include <event/timer/timer_wheel.h>
 #undef private
 
-using namespace minotaur::event;
+using namespace ade::event;
 
 BOOST_AUTO_TEST_SUITE(TestTimerWheel);
 

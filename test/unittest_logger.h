@@ -10,7 +10,7 @@
 #include <log4cplus/fileappender.h>
 #include <log4cplus/layout.h> 
 
-namespace minotaur { namespace unittest {
+namespace ade { namespace unittest {
 
 class UnittestLogger {
  public:
@@ -38,6 +38,6 @@ class UnittestLogger {
 };
 
 }//namespace unittest
-}//namespace minotaur
+}//namespace ade
 
 #endif // _MINOTAUR_UNITTEST_LOGGER_H_

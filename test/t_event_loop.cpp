@@ -20,11 +20,11 @@
 #include <net/io_descriptor_factory.h>
 #include "unittest_logger.h"
 
-using namespace minotaur;
-using namespace minotaur::event;
-using namespace minotaur::unittest;
+using namespace ade;
+using namespace ade::event;
+using namespace ade::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config(log4cplus::TRACE_LOG_LEVEL);
+static ade::unittest::UnittestLogger logger_config(log4cplus::TRACE_LOG_LEVEL);
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 LOGGER_STATIC_DECL_IMPL(g_logger, "root");
 
@@ -38,8 +38,8 @@ class TestServiceHandler : public ServiceHandler {
 
   virtual void OnHttpRequestMessage(HttpMessage* message) {
     GetIOService()->GetIOStage()->Send(
-        EventMessage(
-            minotaur::MessageType::kIOMessageEvent, 
+        MessageFactory::Allocate<EventMessage>(
+            ade::MessageType::kIOMessageEvent, 
             message->descriptor_id,
             (uint64_t)message));
   } 
@@ -50,8 +50,8 @@ class TestServiceHandler : public ServiceHandler {
     message->body = "response";
 
     GetIOService()->GetIOStage()->Send(
-        EventMessage(
-            minotaur::MessageType::kIOMessageEvent, 
+        MessageFactory::Allocate<EventMessage>(
+            ade::MessageType::kIOMessageEvent, 
             message->descriptor_id,
             (uint64_t)message));
   } 
@@ -66,8 +66,8 @@ class TestServiceHandler : public ServiceHandler {
     message->body = "response";
 
     GetIOService()->GetIOStage()->Send(
-        EventMessage(
-            minotaur::MessageType::kIOMessageEvent, 
+        MessageFactory::Allocate<EventMessage>(
+            ade::MessageType::kIOMessageEvent, 
             message->descriptor_id,
             (uint64_t)message));
   } 
@@ -127,15 +127,15 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   BOOST_CHECK_EQUAL(0, ret);
 
-  int i = 0;
+  int i = 5;
   while (i--) {
     sleep(2);
 
     RapidMessage* message = MessageFactory::Allocate<RapidMessage>();
 
     io_service.GetIOStage()->Send(
-        EventMessage(
-            minotaur::MessageType::kIOMessageEvent, 
+        MessageFactory::Allocate<EventMessage>(
+            ade::MessageType::kIOMessageEvent, 
             rapid_connector->GetDescriptorId(),
             (uint64_t)message));
 
@@ -144,7 +144,6 @@ BOOST_AUTO_TEST_CASE(TestEventLoopStage) {
 
   ret = io_service.Run();
   BOOST_CHECK_EQUAL(0, ret);
-  
 
   IODescriptorFactory::Instance().Destroy(http_acceptor);
   IODescriptorFactory::Instance().Destroy(line_acceptor);

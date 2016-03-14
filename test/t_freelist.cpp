@@ -4,7 +4,7 @@
 #include <boost/test/unit_test.hpp>
 #include <lockfree/freelist.hpp>
 
-using namespace minotaur::lockfree;
+using namespace ade::lockfree;
 
 BOOST_AUTO_TEST_SUITE(TestFreelist);
 

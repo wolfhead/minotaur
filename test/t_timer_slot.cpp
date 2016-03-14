@@ -6,7 +6,7 @@
 #include <boost/progress.hpp>
 #include <event/timer/timer_slot.h>
 
-using namespace minotaur::event;
+using namespace ade::event;
 
 BOOST_AUTO_TEST_SUITE(TestTimerSlot);
 

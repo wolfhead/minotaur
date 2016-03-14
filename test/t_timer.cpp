@@ -9,10 +9,10 @@
 #include "unittest_logger.h"
 
 
-using namespace minotaur;
-using namespace minotaur::event;
+using namespace ade;
+using namespace ade::event;
 
-static minotaur::unittest::UnittestLogger logger_config;
+static ade::unittest::UnittestLogger logger_config;
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestTimer);

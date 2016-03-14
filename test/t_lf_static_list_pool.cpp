@@ -8,7 +8,7 @@
 #include <lockfree/lf_static_list_pool.h>
 #undef private
 
-using namespace minotaur::lockfree;
+using namespace ade::lockfree;
 
 BOOST_AUTO_TEST_SUITE(TestLFStaticListPool);
 

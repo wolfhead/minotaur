@@ -1,0 +1,24 @@
+<config>
+  <io_service
+    fd_count="65535"
+    event_loop_worker="1"
+    io_queue_size="131072"
+    io_worker="2"
+    service_worker="2"
+    service_queue_size="131072"
+    service_timer_worker="1"
+    service_timer_queue_size="131072"
+    stack_size="16384" />
+
+  <services>
+    <service address="http://0.0.0.0:6600" name="http_invoke_handler"/>
+    <!--service address="rapid://0.0.0.0:6601" name="rapid_echo_handler"/-->
+  </services>
+
+  <clients>
+    <router name="rapid">
+      <client address="rapid://0.0.0.0:6601" timeout="50" count="4" heartbeat="1000"/>
+    </router>
+  </clients>
+
+</config>

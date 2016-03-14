@@ -6,8 +6,8 @@
 #include <event/timer/timer.h>
 #undef private
 
-using namespace minotaur;
-using namespace minotaur::event;
+using namespace ade;
+using namespace ade::event;
 
 BOOST_AUTO_TEST_SUITE(TestEventTimer);
 

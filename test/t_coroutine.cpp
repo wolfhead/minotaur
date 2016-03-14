@@ -1,20 +1,21 @@
 #define BOOST_AUTO_TEST_MAIN
 
 #include <boost/test/unit_test.hpp>
+#include <boost/lexical_cast.hpp>
 #include <coroutine/coro_all.h>
 #include <common/logger.h>
 #include "unittest_logger.h"
 
-using namespace minotaur;
-using namespace minotaur::unittest;
+using namespace ade;
+using namespace ade::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config;
+static ade::unittest::UnittestLogger logger_config;
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestCoroutine);
 
 static int stub1 = (
-    ThreadLocalCorotineFactory::GlobalInit(1024), 
+    ThreadLocalCorotineFactory::GlobalInit(2048), 
     CoroutineContext::Init(ThreadLocalCorotineFactory::Instance(), NULL, NULL, NULL), 
     0);
 
@@ -76,6 +77,8 @@ BOOST_AUTO_TEST_CASE(testBootstrapWithTask) {
 
   bootstrap.Start(coro::Spawn<CoroTask>([&](){
         int i = 100000000;
+
+        //std::string str = boost::lexical_cast<std::string>(1.1);
         while (i--) {
           Coroutine* coro = coro::Spawn<CoroTask>([&](){++sum;});
           coro::Transfer(coro);
@@ -132,6 +135,7 @@ BOOST_AUTO_TEST_CASE(testThread2) {
     CoroutineContext::Init(ThreadLocalCorotineFactory::Instance(), NULL, NULL, NULL);
     CoroutineFactory factory(1024);
     Coroutine* c1 = factory.CreateCoroutine<Coroutine>();
+
 
     int i = 5000000;
     while (i--) {

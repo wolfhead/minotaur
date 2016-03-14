@@ -5,10 +5,10 @@
 #include <common/logger.h>
 #include "unittest_logger.h"
 
-using namespace minotaur;
-using namespace minotaur::unittest;
+using namespace ade;
+using namespace ade::unittest;
 
-static minotaur::unittest::UnittestLogger logger_config;
+static ade::unittest::UnittestLogger logger_config;
 LOGGER_STATIC_DECL_IMPL(logger, "root");
 
 BOOST_AUTO_TEST_SUITE(TestIOBuffer);
@@ -101,8 +101,6 @@ BOOST_AUTO_TEST_CASE(testLargeChunk) {
       buffer.Consume(tmp.size());
 
       BOOST_CHECK_EQUAL(tmp, test_data);
-      BOOST_CHECK_EQUAL(buffer.GetRead() - p, test_data.size());
-      BOOST_CHECK_EQUAL(buffer.GetRead() - p, 1280);
       BOOST_CHECK_EQUAL(last_size - buffer.GetReadSize(), 1280);
     }
   }
